@@ -10,10 +10,26 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	
 	
-	<link rel="shortcut icon" type="image/png" href="./favicon.png">
-	
-	
-	<script type="text/javascript" src="./PsychEngine.js"></script>
+		<link rel="shortcut icon" type="image/png" href="./favicon.png">
+		
+		<script>
+			// Avoid ERR_HTTP2_FLOW_CONTROL_ERROR from hundreds of concurrent
+			// OpenFL asset requests. The first visit installs the worker; the
+			// one-time reload makes it control this page before the game boots.
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.register('./asset-loader-sw.js', { scope: './' })
+					.then(function () { return navigator.serviceWorker.ready; })
+					.then(function () {
+						if (!navigator.serviceWorker.controller && !sessionStorage.assetLoaderReloaded) {
+							sessionStorage.assetLoaderReloaded = '1';
+							location.reload();
+						}
+					})
+					.catch(function (error) { console.warn('Asset loader unavailable; continuing normally.', error); });
+			}
+		</script>
+		
+		<script type="text/javascript" src="./PsychEngine.js"></script>
 	
 	<script>
 		window.addEventListener ("touchmove", function (event) { event.preventDefault (); }, { capture: false, passive: false });
