@@ -939,7 +939,7 @@ ApplicationMain.main = function() {
 ApplicationMain.create = function(config) {
 	var app = new openfl_display_Application();
 	ManifestResources.init(config);
-	app.meta.h["build"] = "10";
+	app.meta.h["build"] = "4";
 	app.meta.h["company"] = "ShadowMario";
 	app.meta.h["file"] = "PsychEngine";
 	app.meta.h["name"] = "Friday Night Funkin': Psych Engine";
@@ -98697,7 +98697,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 542860;
+	this.version = 705373;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";
