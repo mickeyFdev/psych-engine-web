@@ -16,18 +16,11 @@
 		<link rel="shortcut icon" type="image/png" href="./favicon.png">
 		
 		<script>
-			// Avoid ERR_HTTP2_FLOW_CONTROL_ERROR from hundreds of concurrent
-			// OpenFL asset requests. The first visit installs the worker; the
-			// one-time reload makes it control this page before the game boots.
+			// Install the request limiter in the background. Never reload while
+			// OpenFL is booting: a reload here can interrupt the asset manifest
+			// and leave the game in a crashed/blank loading state on mobile.
 			if ('serviceWorker' in navigator) {
 				navigator.serviceWorker.register('./asset-loader-sw.js', { scope: './' })
-					.then(function () { return navigator.serviceWorker.ready; })
-					.then(function () {
-						if (!navigator.serviceWorker.controller && !sessionStorage.assetLoaderReloaded) {
-							sessionStorage.assetLoaderReloaded = '1';
-							location.reload();
-						}
-					})
 					.catch(function (error) { console.warn('Asset loader unavailable; continuing normally.', error); });
 			}
 		</script>
@@ -44,8 +37,8 @@
 	
 	<style>
 		html,body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-			#openfl-content { background: #000000; width: 100%; height: 100%; }
-			#openfl-content canvas { display: block; width: 100% !important; height: 100% !important; object-fit: contain; }
+			#openfl-content { background: #000000; width: 100%; height: 100%; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+			#openfl-content canvas { display: block; width: min(100%, calc(100dvh * 16 / 9)) !important; height: auto !important; max-height: 100% !important; aspect-ratio: 16 / 9; object-fit: contain; }
 			#mobile-controls, #mobile-fullscreen { display: none; }
 			@media (pointer: coarse), (max-width: 700px) {
 				#mobile-controls { display: flex; position: fixed; z-index: 20; inset: auto 0 max(10px, env(safe-area-inset-bottom)) 0; align-items: flex-end; justify-content: space-between; padding: 0 max(10px, env(safe-area-inset-left)) 0 max(10px, env(safe-area-inset-right)); pointer-events: none; box-sizing: border-box; }
@@ -57,6 +50,11 @@
 				.mobile-key.action { min-width: 58px; height: 42px; padding: 0 7px; border-radius: 10px; font-size: 12px; }
 				.mobile-key.accept { background: rgba(30,120,55,.78); }
 				#mobile-fullscreen { display: block; position: fixed; z-index: 21; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); padding: 8px 10px; border: 1px solid rgba(255,255,255,.65); border-radius: 8px; color: #fff; background: rgba(0,0,0,.58); font: 12px Arial, sans-serif; }
+			@media (max-width: 700px) and (orientation: portrait) {
+				#mobile-controls { flex-wrap: wrap; justify-content: center; gap: 6px; }
+				.mobile-lanes, .mobile-actions { flex: 1 1 100%; justify-content: center; }
+				.mobile-key.action { min-width: 52px; }
+			}
 			}
 		@font-face {
 			font-family: 'Pixel Arial 11 Bold Latin';
