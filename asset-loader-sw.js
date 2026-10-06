@@ -3,8 +3,11 @@
  * preload with an uncaught haxe.ValueException. Failed requests are retried
  * with backoff; non-asset requests are left untouched.
  */
-const MAX_CONCURRENT = 6;
-const MAX_RETRIES = 4;
+// Mobile browsers can terminate the tab when too many decoded assets are
+// requested at once. Keep the queue deliberately small and avoid long retry
+// storms that make the loading screen appear stuck.
+const MAX_CONCURRENT = 3;
+const MAX_RETRIES = 2;
 let active = 0;
 const pending = [];
 
@@ -22,7 +25,7 @@ async function loadAsset(request) {
   let lastError;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await fetch(request, { cache: 'no-store' });
+      const response = await fetch(request, { cache: 'default' });
       if (response.ok || response.status === 304) return response;
       lastError = new Error(`HTTP ${response.status}`);
     } catch (error) {

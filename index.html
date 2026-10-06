@@ -16,24 +16,12 @@
 		<link rel="shortcut icon" type="image/png" href="./favicon.png">
 		
 		<script>
-			// The old asset worker can keep intercepting requests after a deploy.
-			// Remove it before Lime starts so it cannot crash the OpenFL preload.
+			// Limit asset requests in the background. Do not reload here: the
+			// previous reload during preload was itself a mobile crash trigger.
 			window.__psychEngineBootReady = Promise.resolve();
 			if ('serviceWorker' in navigator) {
-				window.__psychEngineBootReady = navigator.serviceWorker.getRegistrations()
-					.then(function (registrations) {
-						if (!registrations.length) return;
-						return Promise.all(registrations.map(function (registration) {
-							return registration.unregister();
-						})).then(function () {
-							if (navigator.serviceWorker.controller && !sessionStorage.psychEngineWorkerRemoved) {
-								sessionStorage.psychEngineWorkerRemoved = '1';
-								location.reload();
-								return new Promise(function () {});
-							}
-						});
-					})
-					.catch(function (error) { console.warn('Service worker cleanup unavailable; continuing normally.', error); });
+				window.__psychEngineBootReady = navigator.serviceWorker.register('./asset-loader-sw.js', { scope: './' })
+					.catch(function (error) { console.warn('Asset limiter unavailable; continuing normally.', error); });
 			}
 		</script>
 		
