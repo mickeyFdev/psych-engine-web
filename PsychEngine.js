@@ -162545,9 +162545,13 @@ states_FreeplayState.prototype = $extend(backend_MusicBeatState.prototype,{
 	}
 	,weekIsLocked: function(name) {
 		var leWeek = backend_WeekData.weeksLoaded.h[name];
-		if(!leWeek.startUnlocked && leWeek.weekBefore.length > 0) {
-			if(Object.prototype.hasOwnProperty.call(states_StoryMenuState.weekCompleted.h,leWeek.weekBefore)) {
-				return !states_StoryMenuState.weekCompleted.h[leWeek.weekBefore];
+		if(leWeek == null) {
+			return true;
+		}
+		var weekBefore = leWeek.weekBefore == null ? "" : leWeek.weekBefore;
+		if(!leWeek.startUnlocked && weekBefore.length > 0) {
+			if(Object.prototype.hasOwnProperty.call(states_StoryMenuState.weekCompleted.h,weekBefore)) {
+				return !states_StoryMenuState.weekCompleted.h[weekBefore];
 			} else {
 				return true;
 			}
@@ -168800,9 +168804,13 @@ states_StoryMenuState.prototype = $extend(backend_MusicBeatState.prototype,{
 	}
 	,weekIsLocked: function(name) {
 		var leWeek = backend_WeekData.weeksLoaded.h[name];
-		if(!leWeek.startUnlocked && leWeek.weekBefore.length > 0) {
-			if(Object.prototype.hasOwnProperty.call(states_StoryMenuState.weekCompleted.h,leWeek.weekBefore)) {
-				return !states_StoryMenuState.weekCompleted.h[leWeek.weekBefore];
+		if(leWeek == null) {
+			return true;
+		}
+		var weekBefore = leWeek.weekBefore == null ? "" : leWeek.weekBefore;
+		if(!leWeek.startUnlocked && weekBefore.length > 0) {
+			if(Object.prototype.hasOwnProperty.call(states_StoryMenuState.weekCompleted.h,weekBefore)) {
+				return !states_StoryMenuState.weekCompleted.h[weekBefore];
 			} else {
 				return true;
 			}
