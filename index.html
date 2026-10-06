@@ -53,7 +53,7 @@
 			#openfl-content canvas { display: block; width: min(100%, calc(100dvh * 16 / 9)) !important; height: auto !important; max-height: 100% !important; aspect-ratio: 16 / 9; object-fit: contain; }
 			#mobile-controls, #mobile-fullscreen { display: none; }
 			@media (pointer: coarse), (max-width: 700px) {
-				#mobile-controls { display: flex; position: fixed; z-index: 20; inset: auto 0 max(10px, env(safe-area-inset-bottom)) 0; align-items: flex-end; justify-content: space-between; padding: 0 max(10px, env(safe-area-inset-left)) 0 max(10px, env(safe-area-inset-right)); pointer-events: none; box-sizing: border-box; }
+				#mobile-controls { display: flex; position: fixed; z-index: 20; inset: max(10px, env(safe-area-inset-top)) 0 auto 0; align-items: flex-start; justify-content: space-between; padding: 0 max(10px, env(safe-area-inset-left)) 0 max(10px, env(safe-area-inset-right)); pointer-events: none; box-sizing: border-box; }
 				.mobile-lanes { display: grid; grid-template-columns: repeat(4, minmax(48px, 13vw)); gap: 6px; pointer-events: auto; }
 				.mobile-actions { display: flex; align-items: flex-end; gap: 6px; pointer-events: auto; }
 				.mobile-key { appearance: none; -webkit-tap-highlight-color: transparent; touch-action: none; user-select: none; border: 2px solid rgba(255,255,255,.72); color: #fff; background: rgba(15,15,25,.72); box-shadow: 0 3px 0 rgba(0,0,0,.55); font: 700 14px/1 Arial, sans-serif; text-shadow: 0 1px 2px #000; }
@@ -69,7 +69,7 @@
 				.mobile-key.lane:nth-child(4).is-pressed { background: rgba(239,68,68,.85); }
 				.mobile-key.action { min-width: 58px; height: 42px; padding: 0 7px; border-radius: 10px; font-size: 12px; }
 				.mobile-key.accept { background: rgba(30,120,55,.78); }
-				#mobile-fullscreen { display: block; position: fixed; z-index: 21; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); padding: 8px 10px; border: 1px solid rgba(255,255,255,.65); border-radius: 8px; color: #fff; background: rgba(0,0,0,.58); font: 12px Arial, sans-serif; }
+				#mobile-fullscreen { display: block; position: fixed; z-index: 21; right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); padding: 8px 10px; border: 1px solid rgba(255,255,255,.65); border-radius: 8px; color: #fff; background: rgba(0,0,0,.58); font: 12px Arial, sans-serif; }
 			@media (max-width: 700px) and (orientation: portrait) {
 				#mobile-controls { flex-wrap: wrap; justify-content: center; gap: 6px; }
 				.mobile-lanes, .mobile-actions { flex: 1 1 100%; justify-content: center; }
