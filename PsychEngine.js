@@ -4815,6 +4815,9 @@ var states_TitleState = function() {
 	this.characterImage = "gfDanceTitle";
 	this.swagShader = null;
 	this.danceLeft = false;
+	this.easterEggKeysBuffer = "";
+	this.allowedKeys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	this.easterEggKeys = ["SHADOW","RIVEREN","BBPANZU","PESSY"];
 	this.curWacky = [];
 	this.titleTextAlphas = [1,.64];
 	this.titleTextColors = [-13369345,-13421620];
@@ -4835,6 +4838,9 @@ states_TitleState.prototype = $extend(backend_MusicBeatState.prototype,{
 	,titleTextAlphas: null
 	,curWacky: null
 	,wackyImage: null
+	,easterEggKeys: null
+	,allowedKeys: null
+	,easterEggKeysBuffer: null
 	,create: function() {
 		backend_Paths.clearStoredMemory();
 		backend_MusicBeatState.prototype.create.call(this);
@@ -4874,6 +4880,7 @@ states_TitleState.prototype = $extend(backend_MusicBeatState.prototype,{
 			flixel_FlxG.sound.playMusic(backend_Paths.returnSound("music/" + "freakyMenu",null,true),0);
 		}
 		this.loadJsonData();
+		this.easterEggData();
 		backend_Conductor.set_bpm(this.musicBPM);
 		this.logoBl = new flixel_FlxSprite(this.logoPosition.x,this.logoPosition.y);
 		var tmp = this.logoBl;
@@ -5217,6 +5224,68 @@ states_TitleState.prototype = $extend(backend_MusicBeatState.prototype,{
 					backend_MusicBeatState.switchState(new states_MainMenuState());
 					states_TitleState.closedState = true;
 				});
+			} else if(flixel_FlxG.keys.firstJustPressed() != -1) {
+				var keyPressed = flixel_FlxG.keys.firstJustPressed();
+				var keyName = flixel_input_keyboard_FlxKey.toStringMap.get(keyPressed);
+				if(this.allowedKeys.indexOf(keyName) != -1) {
+					this.easterEggKeysBuffer += keyName;
+					if(this.easterEggKeysBuffer.length >= 32) {
+						this.easterEggKeysBuffer = this.easterEggKeysBuffer.substring(1);
+					}
+					var _g = 0;
+					var _g1 = this.easterEggKeys;
+					while(_g < _g1.length) {
+						var wordRaw = _g1[_g];
+						++_g;
+						var word = wordRaw.toUpperCase();
+						if(this.easterEggKeysBuffer.indexOf(word) != -1) {
+							if(flixel_FlxG.save.data.psychDevsEasterEgg == word) {
+								flixel_FlxG.save.data.psychDevsEasterEgg = "";
+							} else {
+								flixel_FlxG.save.data.psychDevsEasterEgg = word;
+							}
+							flixel_FlxG.save.flush();
+							flixel_FlxG.sound.play(backend_Paths.returnSound("sounds/" + "secret",null,true));
+							var black = new flixel_FlxSprite(0,0).makeGraphic(1,1,-16777216);
+							var this1 = black.scale;
+							var x = flixel_FlxG.width;
+							var y = flixel_FlxG.height;
+							if(y == null) {
+								y = 0;
+							}
+							if(x == null) {
+								x = 0;
+							}
+							this1.set_x(x);
+							this1.set_y(y);
+							black.updateHitbox();
+							black.set_alpha(0);
+							this.add(black);
+							flixel_tweens_FlxTween.tween(black,{ alpha : 1},1,{ onComplete : function(twn) {
+								flixel_addons_transition_FlxTransitionableState.skipNextTransIn = true;
+								flixel_addons_transition_FlxTransitionableState.skipNextTransOut = true;
+								backend_MusicBeatState.switchState(new states_TitleState());
+							}});
+							var _this = flixel_FlxG.sound.music;
+							if(_this.fadeTween != null) {
+								_this.fadeTween.cancel();
+							}
+							_this.fadeTween = flixel_tweens_FlxTween.num(_this._volume,0,1,{ onComplete : null},$bind(_this,_this.volumeTween));
+							if(states_FreeplayState.vocals != null) {
+								var _this1 = states_FreeplayState.vocals;
+								if(_this1.fadeTween != null) {
+									_this1.fadeTween.cancel();
+								}
+								_this1.fadeTween = flixel_tweens_FlxTween.num(_this1._volume,0,1,{ onComplete : null},$bind(_this1,_this1.volumeTween));
+							}
+							states_TitleState.closedState = true;
+							this.transitioning = true;
+							states_TitleState.playJingle = true;
+							this.easterEggKeysBuffer = "";
+							break;
+						}
+					}
+				}
 			}
 		}
 		if(states_TitleState.initialized && pressedEnter && !this.skippedIntro) {
@@ -5379,15 +5448,121 @@ states_TitleState.prototype = $extend(backend_MusicBeatState.prototype,{
 	,skippedIntro: null
 	,increaseVolume: null
 	,skipIntro: function() {
+		var _gthis = this;
 		if(!this.skippedIntro) {
-			this.remove(this.ngSpr);
-			this.remove(this.credGroup);
-			flixel_FlxG.camera.flash(-1,4);
-			var easteregg = flixel_FlxG.save.data.psychDevsEasterEgg;
-			if(easteregg == null) {
-				easteregg = "";
+			if(states_TitleState.playJingle) {
+				states_TitleState.playJingle = false;
+				var easteregg = flixel_FlxG.save.data.psychDevsEasterEgg;
+				if(easteregg == null) {
+					easteregg = "";
+				}
+				easteregg = easteregg.toUpperCase();
+				var sound = null;
+				switch(easteregg) {
+				case "BBPANZU":
+					sound = flixel_FlxG.sound.play(backend_Paths.returnSound("sounds/" + "JingleBB",null,true));
+					break;
+				case "PESSY":
+					sound = flixel_FlxG.sound.play(backend_Paths.returnSound("sounds/" + "JinglePessy",null,true));
+					break;
+				case "RIVEREN":
+					sound = flixel_FlxG.sound.play(backend_Paths.returnSound("sounds/" + "JingleRiver",null,true));
+					break;
+				case "SHADOW":
+					flixel_FlxG.sound.play(backend_Paths.returnSound("sounds/" + "JingleShadow",null,true));
+					break;
+				default:
+					this.remove(this.ngSpr);
+					this.remove(this.credGroup);
+					flixel_FlxG.camera.flash(-1,2);
+					this.skippedIntro = true;
+					flixel_FlxG.sound.playMusic(backend_Paths.returnSound("music/" + "freakyMenu",null,true),0);
+					var _this = flixel_FlxG.sound.music;
+					var Duration = 4;
+					var From = 0;
+					var To = 0.7;
+					if(To == null) {
+						To = 1;
+					}
+					if(From == null) {
+						From = 0;
+					}
+					if(Duration == null) {
+						Duration = 1;
+					}
+					if(_this._channel == null) {
+						_this.play();
+					}
+					if(_this.fadeTween != null) {
+						_this.fadeTween.cancel();
+					}
+					_this.fadeTween = flixel_tweens_FlxTween.num(From,To,Duration,{ onComplete : null},$bind(_this,_this.volumeTween));
+					return;
+				}
+				this.transitioning = true;
+				if(easteregg == "SHADOW") {
+					new flixel_util_FlxTimer().start(3.2,function(tmr) {
+						_gthis.remove(_gthis.ngSpr);
+						_gthis.remove(_gthis.credGroup);
+						flixel_FlxG.camera.flash(-1,0.6);
+						_gthis.transitioning = false;
+					});
+				} else {
+					this.remove(this.ngSpr);
+					this.remove(this.credGroup);
+					flixel_FlxG.camera.flash(-1,3);
+					sound.onComplete = function() {
+						flixel_FlxG.sound.playMusic(backend_Paths.returnSound("music/" + "freakyMenu",null,true),0);
+						var _this = flixel_FlxG.sound.music;
+						var Duration = 4;
+						var From = 0;
+						var To = 0.7;
+						if(To == null) {
+							To = 1;
+						}
+						if(From == null) {
+							From = 0;
+						}
+						if(Duration == null) {
+							Duration = 1;
+						}
+						if(_this._channel == null) {
+							_this.play();
+						}
+						if(_this.fadeTween != null) {
+							_this.fadeTween.cancel();
+						}
+						_this.fadeTween = flixel_tweens_FlxTween.num(From,To,Duration,{ onComplete : null},$bind(_this,_this.volumeTween));
+						_gthis.transitioning = false;
+						if(easteregg == "PESSY") {
+							backend_Achievements.unlock("pessy_easter_egg");
+						}
+					};
+				}
+			} else {
+				this.remove(this.ngSpr);
+				this.remove(this.credGroup);
+				flixel_FlxG.camera.flash(-1,4);
+				var easteregg1 = flixel_FlxG.save.data.psychDevsEasterEgg;
+				if(easteregg1 == null) {
+					easteregg1 = "";
+				}
+				easteregg1 = easteregg1.toUpperCase();
+				if(easteregg1 == "SHADOW") {
+					var _this = flixel_FlxG.sound.music;
+					if(_this.fadeTween != null) {
+						_this.fadeTween.cancel();
+					}
+					_this.fadeTween = flixel_tweens_FlxTween.num(_this._volume,0,1,{ onComplete : null},$bind(_this,_this.volumeTween));
+					if(states_FreeplayState.vocals != null) {
+						var _this = states_FreeplayState.vocals;
+						if(_this.fadeTween != null) {
+							_this.fadeTween.cancel();
+						}
+						_this.fadeTween = flixel_tweens_FlxTween.num(_this._volume,0,1,{ onComplete : null},$bind(_this,_this.volumeTween));
+					}
+				}
 			}
-			easteregg = easteregg.toUpperCase();
 			this.skippedIntro = true;
 		}
 	}
@@ -5727,6 +5902,24 @@ Lambda.exists = function(it,f) {
 	}
 	return false;
 };
+Lambda.fold = function(it,f,first) {
+	var x = $getIterator(it);
+	while(x.hasNext()) {
+		var x1 = x.next();
+		first = f(x1,first);
+	}
+	return first;
+};
+Lambda.foldi = function(it,f,first) {
+	var i = 0;
+	var x = $getIterator(it);
+	while(x.hasNext()) {
+		var x1 = x.next();
+		first = f(x1,first,i);
+		++i;
+	}
+	return first;
+};
 Lambda.count = function(it,pred) {
 	var n = 0;
 	if(pred == null) {
@@ -5767,7 +5960,7 @@ ManifestResources.init = function(config) {
 	openfl_text_Font.registerFont(_$_$ASSET_$_$OPENFL_$_$flixel_$fonts_$nokiafc22_$ttf);
 	openfl_text_Font.registerFont(_$_$ASSET_$_$OPENFL_$_$flixel_$fonts_$monsterrat_$ttf);
 	var bundle;
-	var data = "{\"name\":null,\"assets\":\"aoy4:pathy34:assets%2Ffonts%2Ffonts-go-here.txty4:sizezy4:typey4:TEXTy2:idR1y7:preloadtgoR2i45592R3y4:FONTy9:classNamey37:__ASSET__assets_fonts_pixel_latin_ttfR5y32:assets%2Ffonts%2Fpixel-latin.ttfR6tgoR2i75864R3R7R8y29:__ASSET__assets_fonts_vcr_ttfR5y24:assets%2Ffonts%2Fvcr.ttfR6tgoR0y43:assets%2Fshared%2Fcharacters%2Fbf-dead.jsonR2i709R3R4R5R13R6tgoR0y38:assets%2Fshared%2Fcharacters%2Fbf.jsonR2i2467R3R4R5R14R6tgoR0y38:assets%2Fshared%2Fcharacters%2Fgf.jsonR2i2326R3R4R5R15R6tgoR0y42:assets%2Fshared%2Fdata%2FcharacterList.txtR2i253R3R4R5R16R6tgoR0y38:assets%2Fshared%2Fdata%2FintroText.txtR2i2329R3R4R5R17R6tgoR0y35:assets%2Fshared%2Fdata%2Freadme.txtR2i223R3R4R5R18R6tgoR0y42:assets%2Fshared%2Fdata%2FspecialThanks.txtR2i300R3R4R5R19R6tgoR0y38:assets%2Fshared%2Fdata%2FstageList.txtR2i61R3R4R5R20R6tgoR0y63:assets%2Fshared%2Fimages%2Fachievements%2Ffriday_night_play.pngR2i7661R3y5:IMAGER5R21R6tgoR0y50:assets%2Fshared%2Fimages%2Fachievements%2Fhype.pngR2i23694R3R22R5R23R6tgoR0y63:assets%2Fshared%2Fimages%2Fachievements%2Flockedachievement.pngR2i1709R3R22R5R24R6tgoR0y57:assets%2Fshared%2Fimages%2Fachievements%2Foversinging.pngR2i19900R3R22R5R25R6tgoR0y53:assets%2Fshared%2Fimages%2Fachievements%2Ftoastie.pngR2i3094R3R22R5R26R6tgoR0y54:assets%2Fshared%2Fimages%2Fachievements%2Ftwo_keys.pngR2i27127R3R22R5R27R6tgoR0y52:assets%2Fshared%2Fimages%2Fachievements%2Fur_bad.pngR2i22017R3R22R5R28R6tgoR0y53:assets%2Fshared%2Fimages%2Fachievements%2Fur_good.pngR2i3467R3R22R5R29R6tgoR0y40:assets%2Fshared%2Fimages%2Falphabet.jsonR2i1643R3R4R5R30R6tgoR0y39:assets%2Fshared%2Fimages%2Falphabet.pngR2i358406R3R22R5R31R6tgoR0y39:assets%2Fshared%2Fimages%2Falphabet.xmlR2i105671R3R4R5R32R6tgoR0y51:assets%2Fshared%2Fimages%2Falphabet_playstation.pngR2i2717R3R22R5R33R6tgoR0y51:assets%2Fshared%2Fimages%2Falphabet_playstation.xmlR2i1209R3R4R5R34R6tgoR0y34:assets%2Fshared%2Fimages%2Fbad.pngR2i11727R3R22R5R35R6tgoR0y54:assets%2Fshared%2Fimages%2Fcampaign_menu_UI_assets.pngR2i3044R3R22R5R36R6tgoR0y54:assets%2Fshared%2Fimages%2Fcampaign_menu_UI_assets.xmlR2i597R3R4R5R37R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND.pngR2i1483134R3R22R5R38R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND.xmlR2i52069R3R4R5R39R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND_DEAD.pngR2i1950123R3R22R5R40R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND_DEAD.xmlR2i15438R3R4R5R41R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FGF_assets.pngR2i3597428R3R22R5R42R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FGF_assets.xmlR2i26238R3R4R5R43R6tgoR0y43:assets%2Fshared%2Fimages%2Fcheckboxanim.pngR2i16546R3R22R5R44R6tgoR0y43:assets%2Fshared%2Fimages%2Fcheckboxanim.xmlR2i1976R3R4R5R45R6tgoR0y36:assets%2Fshared%2Fimages%2Fcombo.pngR2i14255R3R22R5R46R6tgoR0y45:assets%2Fshared%2Fimages%2Fcontrollertype.pngR2i2153R3R22R5R47R6tgoR0y43:assets%2Fshared%2Fimages%2Fcredits%2Fbb.pngR2i5485R3R22R5R48R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fcheems.pngR2i8944R3R22R5R49R6tgoR0y51:assets%2Fshared%2Fimages%2Fcredits%2Fcrowplexus.pngR2i11150R3R22R5R50R6tgoR0y48:assets%2Fshared%2Fimages%2Fcredits%2Fdiscord.pngR2i1510R3R22R5R51R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fevilsk8r.pngR2i7497R3R22R5R52R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fflicky.pngR2i6462R3R22R5R53R6tgoR0y45:assets%2Fshared%2Fimages%2Fcredits%2Fkade.pngR2i9684R3R22R5R54R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fkamizeta.pngR2i12467R3R22R5R55R6tgoR0y52:assets%2Fshared%2Fimages%2Fcredits%2Fkawaisprite.pngR2i3953R3R22R5R56R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fkeoiki.pngR2i3918R3R22R5R57R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fmajigsaw.pngR2i7891R3R22R5R58R6tgoR0y51:assets%2Fshared%2Fimages%2Fcredits%2Fmastereric.pngR2i11899R3R22R5R59R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fmaxneton.pngR2i9651R3R22R5R60R6tgoR0y53:assets%2Fshared%2Fimages%2Fcredits%2Fmissing_icon.pngR2i4039R3R22R5R61R6tgoR0y54:assets%2Fshared%2Fimages%2Fcredits%2Fninjamuffin99.pngR2i5850R3R22R5R62R6tgoR0y54:assets%2Fshared%2Fimages%2Fcredits%2Fphantomarcade.pngR2i9615R3R22R5R63R6tgoR0y48:assets%2Fshared%2Fimages%2Fcredits%2Friveren.pngR2i12824R3R22R5R64R6tgoR0y52:assets%2Fshared%2Fimages%2Fcredits%2Fshadowmario.pngR2i3679R3R22R5R65R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fsqirra.pngR2i8258R3R22R5R66R6tgoR0y54:assets%2Fshared%2Fimages%2Fcredits%2Fsuperpowers04.pngR2i11585R3R22R5R67R6tgoR0y45:assets%2Fshared%2Fimages%2Fdialogue%2Fbf.jsonR2i987R3R4R5R68R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FBF_Dialogue.pngR2i540363R3R22R5R69R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FBF_Dialogue.xmlR2i4980R3R4R5R70R6tgoR0y45:assets%2Fshared%2Fimages%2Fdialogue%2Fgf.jsonR2i807R3R4R5R71R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FGF_Dialogue.pngR2i396276R3R22R5R72R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FGF_Dialogue.xmlR2i5287R3R4R5R73R6tgoR0y49:assets%2Fshared%2Fimages%2Feditors%2Fautosave.pngR2i1157R3R22R5R74R6tgoR0y50:assets%2Fshared%2Fimages%2Feditors%2FeventIcon.pngR2i8264R3R22R5R75R6tgoR0y53:assets%2Fshared%2Fimages%2Feditors%2FsilhouetteBF.pngR2i12088R3R22R5R76R6tgoR0y54:assets%2Fshared%2Fimages%2Feditors%2FsilhouetteDad.pngR2i22004R3R22R5R77R6tgoR0y57:assets%2Fshared%2Fimages%2Feditors%2Fvortex_indicator.pngR2i815R3R22R5R78R6tgoR0y37:assets%2Fshared%2Fimages%2Ffunkay.pngR2i367940R3R22R5R79R6tgoR0y44:assets%2Fshared%2Fimages%2FgfDanceTitle.jsonR2i324R3R4R5R80R6tgoR0y43:assets%2Fshared%2Fimages%2FgfDanceTitle.pngR2i745426R3R22R5R81R6tgoR0y43:assets%2Fshared%2Fimages%2FgfDanceTitle.xmlR2i4259R3R4R5R82R6tgoR0y33:assets%2Fshared%2Fimages%2Fgo.pngR2i5889R3R22R5R83R6tgoR0y35:assets%2Fshared%2Fimages%2Fgood.pngR2i11923R3R22R5R84R6tgoR0y40:assets%2Fshared%2Fimages%2FhealthBar.pngR2i551R3R22R5R85R6tgoR0y46:assets%2Fshared%2Fimages%2Ficons%2Ficon-bf.pngR2i14607R3R22R5R86R6tgoR0y47:assets%2Fshared%2Fimages%2Ficons%2Ficon-dad.pngR2i12384R3R22R5R87R6tgoR0y48:assets%2Fshared%2Fimages%2Ficons%2Ficon-face.pngR2i3549R3R22R5R88R6tgoR0y46:assets%2Fshared%2Fimages%2Ficons%2Ficon-gf.pngR2i10205R3R22R5R89R6tgoR0y52:assets%2Fshared%2Fimages%2Floading_screen%2Ficon.pngR2i55787R3R22R5R90R6tgoR0y52:assets%2Fshared%2Fimages%2Floading_screen%2Flogo.pngR2i236431R3R22R5R91R6tgoR0y53:assets%2Fshared%2Fimages%2Floading_screen%2Fpessy.pngR2i2435627R3R22R5R92R6tgoR0y53:assets%2Fshared%2Fimages%2Floading_screen%2Fpessy.xmlR2i15878R3R4R5R93R6tgoR0y41:assets%2Fshared%2Fimages%2FlogoBumpin.pngR2i578147R3R22R5R94R6tgoR0y41:assets%2Fshared%2Fimages%2FlogoBumpin.xmlR2i2177R3R4R5R95R6tgoR0y59:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_achievements.pngR2i152399R3R22R5R96R6tgoR0y59:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_achievements.xmlR2i2621R3R4R5R97R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_credits.pngR2i67411R3R22R5R98R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_credits.xmlR2i1339R3R4R5R99R6tgoR0y55:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_freeplay.pngR2i68922R3R22R5R100R6tgoR0y55:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_freeplay.xmlR2i1345R3R4R5R101R6tgoR0y51:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_mods.pngR2i49276R3R22R5R102R6tgoR0y51:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_mods.xmlR2i1699R3R4R5R103R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_options.pngR2i124798R3R22R5R104R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_options.xmlR2i2392R3R4R5R105R6tgoR0y57:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_story_mode.pngR2i99201R3R22R5R106R6tgoR0y57:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_story_mode.xmlR2i1370R3R4R5R107R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Freadme.txtR2i121R3R4R5R108R6tgoR0y37:assets%2Fshared%2Fimages%2FmenuBG.pngR2i474435R3R22R5R109R6tgoR0y41:assets%2Fshared%2Fimages%2FmenuBGBlue.pngR2i454823R3R22R5R110R6tgoR0y44:assets%2Fshared%2Fimages%2FmenuBGMagenta.pngR2i446604R3R22R5R111R6tgoR0y51:assets%2Fshared%2Fimages%2Fmenucharacters%2Fbf.jsonR2i148R3R4R5R112R6tgoR0y51:assets%2Fshared%2Fimages%2Fmenucharacters%2Fgf.jsonR2i148R3R4R5R113R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_BF.pngR2i231974R3R22R5R114R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_BF.xmlR2i5582R3R4R5R115R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_GF.pngR2i314273R3R22R5R116R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_GF.xmlR2i3802R3R4R5R117R6tgoR0y40:assets%2Fshared%2Fimages%2FmenuDesat.pngR2i215613R3R22R5R118R6tgoR0y54:assets%2Fshared%2Fimages%2Fmenudifficulties%2Feasy.pngR2i3453R3R22R5R119R6tgoR0y54:assets%2Fshared%2Fimages%2Fmenudifficulties%2Fhard.pngR2i3880R3R22R5R120R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenudifficulties%2Fnormal.pngR2i4853R3R22R5R121R6tgoR0y42:assets%2Fshared%2Fimages%2FMenu_Tracks.pngR2i1254R3R22R5R122R6tgoR0y46:assets%2Fshared%2Fimages%2FmodsMenuButtons.pngR2i2975R3R22R5R123R6tgoR0y46:assets%2Fshared%2Fimages%2Fnewgrounds_logo.pngR2i40016R3R22R5R124R6tgoR0y57:assets%2Fshared%2Fimages%2FnoteColorMenu%2FcolorWheel.pngR2i83362R3R22R5R125R6tgoR0y51:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fcopy.pngR2i1684R3R22R5R126R6tgoR0y51:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fnote.pngR2i11625R3R22R5R127R6tgoR0y56:assets%2Fshared%2Fimages%2FnoteColorMenu%2FnotePixel.pngR2i429R3R22R5R128R6tgoR0y54:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fpalette.pngR2i288R3R22R5R129R6tgoR0y52:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fpaste.pngR2i1518R3R22R5R130R6tgoR0y47:assets%2Fshared%2Fimages%2FnoteSkins%2Flist.txtR2i11R3R4R5R131R6tgoR0y59:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-chip.pngR2i169067R3R22R5R132R6tgoR0y59:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-chip.xmlR2i4866R3R4R5R133R6tgoR0y61:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-future.pngR2i571497R3R22R5R134R6tgoR0y61:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-future.xmlR2i4929R3R4R5R135R6tgoR0y54:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets.pngR2i653659R3R22R5R136R6tgoR0y54:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets.xmlR2i4913R3R4R5R137R6tgoR0y50:assets%2Fshared%2Fimages%2FnoteSplashes%2Flist.txtR2i33R3R4R5R138R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-diamond.jsonR2i1583R3R4R5R139R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-diamond.pngR2i32456R3R22R5R140R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-diamond.xmlR2i4415R3R4R5R141R6tgoR0y68:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-electric.jsonR2i806R3R4R5R142R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-electric.pngR2i26326R3R22R5R143R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-electric.xmlR2i2584R3R4R5R144R6tgoR0y68:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-sparkles.jsonR2i809R3R4R5R145R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-sparkles.pngR2i22341R3R22R5R146R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-sparkles.xmlR2i2596R3R4R5R147R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-vanilla.jsonR2i1543R3R4R5R148R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-vanilla.pngR2i184255R3R22R5R149R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-vanilla.xmlR2i4725R3R4R5R150R6tgoR0y59:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes.jsonR2i1519R3R4R5R151R6tgoR0y58:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes.pngR2i33060R3R22R5R152R6tgoR0y58:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes.xmlR2i4383R3R4R5R153R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum0.pngR2i1816R3R22R5R154R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum1.pngR2i1779R3R22R5R155R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum2.pngR2i1985R3R22R5R156R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum3.pngR2i1990R3R22R5R157R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum4.pngR2i1955R3R22R5R158R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum5.pngR2i2023R3R22R5R159R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum6.pngR2i2082R3R22R5R160R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum7.pngR2i1881R3R22R5R161R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum8.pngR2i2024R3R22R5R162R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum9.pngR2i1851R3R22R5R163R6tgoR0y50:assets%2Fshared%2Fimages%2FpixelUI%2Fbad-pixel.pngR2i228R3R22R5R164R6tgoR0y52:assets%2Fshared%2Fimages%2FpixelUI%2Fcombo-pixel.pngR2i247R3R22R5R165R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fdate-pixel.pngR2i518R3R22R5R166R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fgood-pixel.pngR2i237R3R22R5R167R6tgoR0y69:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assets-chip.pngR2i1480R3R22R5R168R6tgoR0y71:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assets-future.pngR2i2351R3R22R5R169R6tgoR0y64:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assets.pngR2i3337R3R22R5R170R6tgoR0y73:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assetsENDS-chip.pngR2i246R3R22R5R171R6tgoR0y75:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assetsENDS-future.pngR2i258R3R22R5R172R6tgoR0y68:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assetsENDS.pngR2i202R3R22R5R173R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum0-pixel.pngR2i132R3R22R5R174R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum1-pixel.pngR2i160R3R22R5R175R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum2-pixel.pngR2i139R3R22R5R176R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum3-pixel.pngR2i137R3R22R5R177R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum4-pixel.pngR2i132R3R22R5R178R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum5-pixel.pngR2i135R3R22R5R179R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum6-pixel.pngR2i138R3R22R5R180R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum7-pixel.pngR2i141R3R22R5R181R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum8-pixel.pngR2i129R3R22R5R182R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum9-pixel.pngR2i127R3R22R5R183R6tgoR0y52:assets%2Fshared%2Fimages%2FpixelUI%2Fready-pixel.pngR2i531R3R22R5R184R6tgoR0y50:assets%2Fshared%2Fimages%2FpixelUI%2Fset-pixel.pngR2i485R3R22R5R185R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fshit-pixel.pngR2i292R3R22R5R186R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fsick-pixel.pngR2i307R3R22R5R187R6tgoR0y36:assets%2Fshared%2Fimages%2Fready.pngR2i28966R3R22R5R188R6tgoR0y34:assets%2Fshared%2Fimages%2Fset.pngR2i25471R3R22R5R189R6tgoR0y35:assets%2Fshared%2Fimages%2Fshit.pngR2i15319R3R22R5R190R6tgoR0y35:assets%2Fshared%2Fimages%2Fsick.pngR2i19249R3R22R5R191R6tgoR0y44:assets%2Fshared%2Fimages%2Fspeech_bubble.pngR2i189234R3R22R5R192R6tgoR0y44:assets%2Fshared%2Fimages%2Fspeech_bubble.xmlR2i9686R3R4R5R193R6tgoR0y49:assets%2Fshared%2Fimages%2Fstorymenu%2Freadme.txtR2i87R3R4R5R194R6tgoR0y38:assets%2Fshared%2Fimages%2FtimeBar.pngR2i367R3R22R5R195R6tgoR0y41:assets%2Fshared%2Fimages%2FtitleEnter.pngR2i26291R3R22R5R196R6tgoR0y41:assets%2Fshared%2Fimages%2FtitleEnter.xmlR2i518R3R4R5R197R6tgoR0y41:assets%2Fshared%2Fimages%2FunknownMod.pngR2i2387R3R22R5R198R6tgoR2i2400129R3y5:MUSICR5y39:assets%2Fshared%2Fmusic%2Fbreakfast.mp3y9:pathGroupaR200hR6tgoR2i2309657R3R199R5y40:assets%2Fshared%2Fmusic%2FfreakyMenu.mp3R201aR202hR6tgoR2i1535999R3R199R5y38:assets%2Fshared%2Fmusic%2FgameOver.mp3R201aR203hR6tgoR2i288391R3R199R5y41:assets%2Fshared%2Fmusic%2FgameOverEnd.mp3R201aR204hR6tgoR2i2402257R3R199R5y40:assets%2Fshared%2Fmusic%2FoffsetSong.mp3R201aR205hR6tgoR2i9693555R3R199R5y38:assets%2Fshared%2Fmusic%2Ftea-time.mp3R201aR206hR6tgoR2i2418R3R199R5y36:assets%2Fshared%2Fsounds%2FANGRY.mp3R201aR207hR6tgoR2i43182R3R199R5y45:assets%2Fshared%2Fsounds%2FANGRY_TEXT_BOX.mp3R201aR208hR6tgoR2i34480R3R199R5y40:assets%2Fshared%2Fsounds%2Fbadnoise1.mp3R201aR209hR6tgoR2i34480R3R199R5y40:assets%2Fshared%2Fsounds%2Fbadnoise2.mp3R201aR210hR6tgoR2i34480R3R199R5y40:assets%2Fshared%2Fsounds%2Fbadnoise3.mp3R201aR211hR6tgoR2i17762R3R199R5y41:assets%2Fshared%2Fsounds%2FcancelMenu.mp3R201aR212hR6tgoR2i5888R3R199R5y40:assets%2Fshared%2Fsounds%2FclickText.mp3R201aR213hR6tgoR2i91950R3R199R5y42:assets%2Fshared%2Fsounds%2FconfirmMenu.mp3R201aR214hR6tgoR2i7351R3R199R5y39:assets%2Fshared%2Fsounds%2Fdialogue.mp3R201aR215hR6tgoR2i13620R3R199R5y44:assets%2Fshared%2Fsounds%2FdialogueClose.mp3R201aR216hR6tgoR2i83302R3R199R5y43:assets%2Fshared%2Fsounds%2Ffnf_loss_sfx.mp3R201aR217hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_1.mp3R201aR218hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_2.mp3R201aR219hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_3.mp3R201aR220hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_4.mp3R201aR221hR6tgoR2i8358R3R199R5y39:assets%2Fshared%2Fsounds%2Fhitsound.mp3R201aR222hR6tgoR2i9155R3R199R5y43:assets%2Fshared%2Fsounds%2Fintro1-pixel.mp3R201aR223hR6tgoR2i11426R3R199R5y37:assets%2Fshared%2Fsounds%2Fintro1.mp3R201aR224hR6tgoR2i9912R3R199R5y43:assets%2Fshared%2Fsounds%2Fintro2-pixel.mp3R201aR225hR6tgoR2i12051R3R199R5y37:assets%2Fshared%2Fsounds%2Fintro2.mp3R201aR226hR6tgoR2i9128R3R199R5y43:assets%2Fshared%2Fsounds%2Fintro3-pixel.mp3R201aR227hR6tgoR2i11582R3R199R5y37:assets%2Fshared%2Fsounds%2Fintro3.mp3R201aR228hR6tgoR2i21651R3R199R5y44:assets%2Fshared%2Fsounds%2FintroGo-pixel.mp3R201aR229hR6tgoR2i13254R3R199R5y38:assets%2Fshared%2Fsounds%2FintroGo.mp3R201aR230hR6tgoR2i6268R3R199R5y45:assets%2Fshared%2Fsounds%2FMetronome_Tick.mp3R201aR231hR6tgoR2i68962R3R199R5y40:assets%2Fshared%2Fsounds%2Fmissnote1.mp3R201aR232hR6tgoR2i68962R3R199R5y40:assets%2Fshared%2Fsounds%2Fmissnote2.mp3R201aR233hR6tgoR2i68962R3R199R5y40:assets%2Fshared%2Fsounds%2Fmissnote3.mp3R201aR234hR6tgoR2i17762R3R199R5y41:assets%2Fshared%2Fsounds%2FscrollMenu.mp3R201aR235hR6tgoR2i42970R3R199R5y37:assets%2Fshared%2Fsounds%2Fsecret.mp3R201aR236hR6tgoR0y45:assets%2Fshared%2Fsounds%2Fsounds-go-here.txtR2zR3R4R5R237R6tgoR2i320854R3R199R5y40:assets%2Fshared%2Fsounds%2FsoundTest.mp3R201aR238hR6tgoR0y37:assets%2Fshared%2Fstages%2Freadme.txtR2i31R3R4R5R239R6tgoR0y38:assets%2Fshared%2Fweeks%2FweekList.txtR2i59R3R4R5R240R6tgoR0y51:assets%2Fembed%2Fimages%2Fpsych-ui%2Farrow_down.pngR2i271R3R22R5R241R6tgoR0y49:assets%2Fembed%2Fimages%2Fpsych-ui%2Farrow_up.pngR2i275R3R22R5R242R6tgoR0y49:assets%2Fembed%2Fimages%2Fpsych-ui%2Fcheckbox.pngR2i206R3R22R5R243R6tgoR0y56:assets%2Fembed%2Fimages%2Fpsych-ui%2Fdropdown_button.pngR2i226R3R22R5R244R6tgoR0y46:assets%2Fembed%2Fimages%2Fpsych-ui%2Fradio.pngR2i257R3R22R5R245R6tgoR0y54:assets%2Fembed%2Fimages%2Fpsych-ui%2Fstepper_minus.pngR2i167R3R22R5R246R6tgoR0y53:assets%2Fembed%2Fimages%2Fpsych-ui%2Fstepper_plus.pngR2i177R3R22R5R247R6tgoR0y27:assets%2Fsongs%2Freadme.txtR2i115R3R4R5R248R6tgoR0y19:assets%2Freadme.txtR2i407R3R4R5R249R6tgoR0y35:assets%2Fshared%2Fdata%2Fpt-BR.langR2i12493R3R4R5R250R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_credits.pngR2i75937R3R22R5R251R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_credits.xmlR2i1344R3R4R5R252R6tgoR0y65:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_story_mode.pngR2i104675R3R22R5R253R6tgoR0y65:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_story_mode.xmlR2i1381R3R4R5R254R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmenudifficulties%2Feasy.pngR2i3656R3R22R5R255R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmenudifficulties%2Fhard.pngR2i4514R3R22R5R256R6tgoR0y50:assets%2Fshared%2Fimages%2Fpt-BR%2FMenu_Tracks.pngR2i1885R3R22R5R257R6tgoR0y21:do%20NOT%20readme.txtR2i4326R3R4R5R258R6tgoR2i8220R3R199R5y26:flixel%2Fsounds%2Fbeep.mp3R201aR259y26:flixel%2Fsounds%2Fbeep.ogghR6tgoR2i39706R3R199R5y28:flixel%2Fsounds%2Fflixel.mp3R201aR261y28:flixel%2Fsounds%2Fflixel.ogghR6tgoR2i6840R3y5:SOUNDR5R260R201aR259R260hgoR2i33629R3R263R5R262R201aR261R262hgoR2i15744R3R7R8y35:__ASSET__flixel_fonts_nokiafc22_ttfR5y30:flixel%2Ffonts%2Fnokiafc22.ttfR6tgoR2i29724R3R7R8y36:__ASSET__flixel_fonts_monsterrat_ttfR5y31:flixel%2Ffonts%2Fmonsterrat.ttfR6tgoR0y33:flixel%2Fimages%2Fui%2Fbutton.pngR2i248R3R22R5R268R6tgoR0y36:flixel%2Fimages%2Flogo%2Fdefault.pngR2i505R3R22R5R269R6tgoR0y42:flixel%2Fimages%2Ftransitions%2Fcircle.pngR2i824R3R22R5R270R6tgoR0y53:flixel%2Fimages%2Ftransitions%2Fdiagonal_gradient.pngR2i3812R3R22R5R271R6tgoR0y43:flixel%2Fimages%2Ftransitions%2Fdiamond.pngR2i788R3R22R5R272R6tgoR0y42:flixel%2Fimages%2Ftransitions%2Fsquare.pngR2i383R3R22R5R273R6tgoR0y31:flxanimate%2Fimages%2Fpivot.pngR2i300R3R22R5R274R6tgoR0y35:flxanimate%2Fimages%2Findicator.pngR2i129R3R22R5R275R6tgh\",\"rootPath\":null,\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
+	var data = "{\"name\":null,\"assets\":\"aoy4:pathy34:assets%2Ffonts%2Ffonts-go-here.txty4:sizezy4:typey4:TEXTy2:idR1y7:preloadtgoR2i45592R3y4:FONTy9:classNamey37:__ASSET__assets_fonts_pixel_latin_ttfR5y32:assets%2Ffonts%2Fpixel-latin.ttfR6tgoR2i75864R3R7R8y29:__ASSET__assets_fonts_vcr_ttfR5y24:assets%2Ffonts%2Fvcr.ttfR6tgoR0y43:assets%2Fshared%2Fcharacters%2Fbf-dead.jsonR2i709R3R4R5R13R6tgoR0y38:assets%2Fshared%2Fcharacters%2Fbf.jsonR2i2467R3R4R5R14R6tgoR0y38:assets%2Fshared%2Fcharacters%2Fgf.jsonR2i2326R3R4R5R15R6tgoR0y42:assets%2Fshared%2Fdata%2FcharacterList.txtR2i253R3R4R5R16R6tgoR0y38:assets%2Fshared%2Fdata%2FintroText.txtR2i2329R3R4R5R17R6tgoR0y35:assets%2Fshared%2Fdata%2Freadme.txtR2i223R3R4R5R18R6tgoR0y42:assets%2Fshared%2Fdata%2FspecialThanks.txtR2i300R3R4R5R19R6tgoR0y38:assets%2Fshared%2Fdata%2FstageList.txtR2i61R3R4R5R20R6tgoR0y63:assets%2Fshared%2Fimages%2Fachievements%2Ffriday_night_play.pngR2i7661R3y5:IMAGER5R21R6tgoR0y50:assets%2Fshared%2Fimages%2Fachievements%2Fhype.pngR2i23694R3R22R5R23R6tgoR0y63:assets%2Fshared%2Fimages%2Fachievements%2Flockedachievement.pngR2i1709R3R22R5R24R6tgoR0y57:assets%2Fshared%2Fimages%2Fachievements%2Foversinging.pngR2i19900R3R22R5R25R6tgoR0y53:assets%2Fshared%2Fimages%2Fachievements%2Ftoastie.pngR2i3094R3R22R5R26R6tgoR0y54:assets%2Fshared%2Fimages%2Fachievements%2Ftwo_keys.pngR2i27127R3R22R5R27R6tgoR0y52:assets%2Fshared%2Fimages%2Fachievements%2Fur_bad.pngR2i22017R3R22R5R28R6tgoR0y53:assets%2Fshared%2Fimages%2Fachievements%2Fur_good.pngR2i3467R3R22R5R29R6tgoR0y40:assets%2Fshared%2Fimages%2Falphabet.jsonR2i1643R3R4R5R30R6tgoR0y39:assets%2Fshared%2Fimages%2Falphabet.pngR2i358406R3R22R5R31R6tgoR0y39:assets%2Fshared%2Fimages%2Falphabet.xmlR2i105671R3R4R5R32R6tgoR0y51:assets%2Fshared%2Fimages%2Falphabet_playstation.pngR2i2717R3R22R5R33R6tgoR0y51:assets%2Fshared%2Fimages%2Falphabet_playstation.xmlR2i1209R3R4R5R34R6tgoR0y34:assets%2Fshared%2Fimages%2Fbad.pngR2i11727R3R22R5R35R6tgoR0y54:assets%2Fshared%2Fimages%2Fcampaign_menu_UI_assets.pngR2i3044R3R22R5R36R6tgoR0y54:assets%2Fshared%2Fimages%2Fcampaign_menu_UI_assets.xmlR2i597R3R4R5R37R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND.pngR2i1483134R3R22R5R38R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND.xmlR2i52069R3R4R5R39R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND_DEAD.pngR2i1950123R3R22R5R40R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FBOYFRIEND_DEAD.xmlR2i15438R3R4R5R41R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FGF_assets.pngR2i3597428R3R22R5R42R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FGF_assets.xmlR2i26238R3R4R5R43R6tgoR0y43:assets%2Fshared%2Fimages%2Fcheckboxanim.pngR2i16546R3R22R5R44R6tgoR0y43:assets%2Fshared%2Fimages%2Fcheckboxanim.xmlR2i1976R3R4R5R45R6tgoR0y36:assets%2Fshared%2Fimages%2Fcombo.pngR2i14255R3R22R5R46R6tgoR0y45:assets%2Fshared%2Fimages%2Fcontrollertype.pngR2i2153R3R22R5R47R6tgoR0y43:assets%2Fshared%2Fimages%2Fcredits%2Fbb.pngR2i5485R3R22R5R48R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fcheems.pngR2i8944R3R22R5R49R6tgoR0y51:assets%2Fshared%2Fimages%2Fcredits%2Fcrowplexus.pngR2i11150R3R22R5R50R6tgoR0y48:assets%2Fshared%2Fimages%2Fcredits%2Fdiscord.pngR2i1510R3R22R5R51R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fevilsk8r.pngR2i7497R3R22R5R52R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fflicky.pngR2i6462R3R22R5R53R6tgoR0y45:assets%2Fshared%2Fimages%2Fcredits%2Fkade.pngR2i9684R3R22R5R54R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fkamizeta.pngR2i12467R3R22R5R55R6tgoR0y52:assets%2Fshared%2Fimages%2Fcredits%2Fkawaisprite.pngR2i3953R3R22R5R56R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fkeoiki.pngR2i3918R3R22R5R57R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fmajigsaw.pngR2i7891R3R22R5R58R6tgoR0y51:assets%2Fshared%2Fimages%2Fcredits%2Fmastereric.pngR2i11899R3R22R5R59R6tgoR0y49:assets%2Fshared%2Fimages%2Fcredits%2Fmaxneton.pngR2i9651R3R22R5R60R6tgoR0y53:assets%2Fshared%2Fimages%2Fcredits%2Fmissing_icon.pngR2i4039R3R22R5R61R6tgoR0y54:assets%2Fshared%2Fimages%2Fcredits%2Fninjamuffin99.pngR2i5850R3R22R5R62R6tgoR0y54:assets%2Fshared%2Fimages%2Fcredits%2Fphantomarcade.pngR2i9615R3R22R5R63R6tgoR0y48:assets%2Fshared%2Fimages%2Fcredits%2Friveren.pngR2i12824R3R22R5R64R6tgoR0y52:assets%2Fshared%2Fimages%2Fcredits%2Fshadowmario.pngR2i3679R3R22R5R65R6tgoR0y47:assets%2Fshared%2Fimages%2Fcredits%2Fsqirra.pngR2i8258R3R22R5R66R6tgoR0y54:assets%2Fshared%2Fimages%2Fcredits%2Fsuperpowers04.pngR2i11585R3R22R5R67R6tgoR0y45:assets%2Fshared%2Fimages%2Fdialogue%2Fbf.jsonR2i987R3R4R5R68R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FBF_Dialogue.pngR2i540363R3R22R5R69R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FBF_Dialogue.xmlR2i4980R3R4R5R70R6tgoR0y45:assets%2Fshared%2Fimages%2Fdialogue%2Fgf.jsonR2i807R3R4R5R71R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FGF_Dialogue.pngR2i396276R3R22R5R72R6tgoR0y53:assets%2Fshared%2Fimages%2Fdialogue%2FGF_Dialogue.xmlR2i5287R3R4R5R73R6tgoR0y49:assets%2Fshared%2Fimages%2Feditors%2Fautosave.pngR2i1157R3R22R5R74R6tgoR0y50:assets%2Fshared%2Fimages%2Feditors%2FeventIcon.pngR2i8264R3R22R5R75R6tgoR0y53:assets%2Fshared%2Fimages%2Feditors%2FsilhouetteBF.pngR2i12088R3R22R5R76R6tgoR0y54:assets%2Fshared%2Fimages%2Feditors%2FsilhouetteDad.pngR2i22004R3R22R5R77R6tgoR0y57:assets%2Fshared%2Fimages%2Feditors%2Fvortex_indicator.pngR2i815R3R22R5R78R6tgoR0y37:assets%2Fshared%2Fimages%2Ffunkay.pngR2i367940R3R22R5R79R6tgoR0y44:assets%2Fshared%2Fimages%2FgfDanceTitle.jsonR2i324R3R4R5R80R6tgoR0y43:assets%2Fshared%2Fimages%2FgfDanceTitle.pngR2i745426R3R22R5R81R6tgoR0y43:assets%2Fshared%2Fimages%2FgfDanceTitle.xmlR2i4259R3R4R5R82R6tgoR0y33:assets%2Fshared%2Fimages%2Fgo.pngR2i5889R3R22R5R83R6tgoR0y35:assets%2Fshared%2Fimages%2Fgood.pngR2i11923R3R22R5R84R6tgoR0y40:assets%2Fshared%2Fimages%2FhealthBar.pngR2i551R3R22R5R85R6tgoR0y46:assets%2Fshared%2Fimages%2Ficons%2Ficon-bf.pngR2i14607R3R22R5R86R6tgoR0y47:assets%2Fshared%2Fimages%2Ficons%2Ficon-dad.pngR2i12384R3R22R5R87R6tgoR0y48:assets%2Fshared%2Fimages%2Ficons%2Ficon-face.pngR2i3549R3R22R5R88R6tgoR0y46:assets%2Fshared%2Fimages%2Ficons%2Ficon-gf.pngR2i10205R3R22R5R89R6tgoR0y52:assets%2Fshared%2Fimages%2Floading_screen%2Ficon.pngR2i55787R3R22R5R90R6tgoR0y52:assets%2Fshared%2Fimages%2Floading_screen%2Flogo.pngR2i236431R3R22R5R91R6tgoR0y53:assets%2Fshared%2Fimages%2Floading_screen%2Fpessy.pngR2i2435627R3R22R5R92R6tgoR0y53:assets%2Fshared%2Fimages%2Floading_screen%2Fpessy.xmlR2i15878R3R4R5R93R6tgoR0y41:assets%2Fshared%2Fimages%2FlogoBumpin.pngR2i578147R3R22R5R94R6tgoR0y41:assets%2Fshared%2Fimages%2FlogoBumpin.xmlR2i2177R3R4R5R95R6tgoR0y59:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_achievements.pngR2i152399R3R22R5R96R6tgoR0y59:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_achievements.xmlR2i2621R3R4R5R97R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_credits.pngR2i67411R3R22R5R98R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_credits.xmlR2i1339R3R4R5R99R6tgoR0y55:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_freeplay.pngR2i68922R3R22R5R100R6tgoR0y55:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_freeplay.xmlR2i1345R3R4R5R101R6tgoR0y51:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_mods.pngR2i49276R3R22R5R102R6tgoR0y51:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_mods.xmlR2i1699R3R4R5R103R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_options.pngR2i124798R3R22R5R104R6tgoR0y54:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_options.xmlR2i2392R3R4R5R105R6tgoR0y57:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_story_mode.pngR2i99201R3R22R5R106R6tgoR0y57:assets%2Fshared%2Fimages%2Fmainmenu%2Fmenu_story_mode.xmlR2i1370R3R4R5R107R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Freadme.txtR2i121R3R4R5R108R6tgoR0y37:assets%2Fshared%2Fimages%2FmenuBG.pngR2i474435R3R22R5R109R6tgoR0y41:assets%2Fshared%2Fimages%2FmenuBGBlue.pngR2i454823R3R22R5R110R6tgoR0y44:assets%2Fshared%2Fimages%2FmenuBGMagenta.pngR2i446604R3R22R5R111R6tgoR0y51:assets%2Fshared%2Fimages%2Fmenucharacters%2Fbf.jsonR2i148R3R4R5R112R6tgoR0y51:assets%2Fshared%2Fimages%2Fmenucharacters%2Fgf.jsonR2i148R3R4R5R113R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_BF.pngR2i231974R3R22R5R114R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_BF.xmlR2i5582R3R4R5R115R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_GF.pngR2i314273R3R22R5R116R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_GF.xmlR2i3802R3R4R5R117R6tgoR0y40:assets%2Fshared%2Fimages%2FmenuDesat.pngR2i215613R3R22R5R118R6tgoR0y54:assets%2Fshared%2Fimages%2Fmenudifficulties%2Feasy.pngR2i3453R3R22R5R119R6tgoR0y54:assets%2Fshared%2Fimages%2Fmenudifficulties%2Fhard.pngR2i3880R3R22R5R120R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenudifficulties%2Fnormal.pngR2i4853R3R22R5R121R6tgoR0y42:assets%2Fshared%2Fimages%2FMenu_Tracks.pngR2i1254R3R22R5R122R6tgoR0y46:assets%2Fshared%2Fimages%2FmodsMenuButtons.pngR2i2975R3R22R5R123R6tgoR0y46:assets%2Fshared%2Fimages%2Fnewgrounds_logo.pngR2i40016R3R22R5R124R6tgoR0y57:assets%2Fshared%2Fimages%2FnoteColorMenu%2FcolorWheel.pngR2i83362R3R22R5R125R6tgoR0y51:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fcopy.pngR2i1684R3R22R5R126R6tgoR0y51:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fnote.pngR2i11625R3R22R5R127R6tgoR0y56:assets%2Fshared%2Fimages%2FnoteColorMenu%2FnotePixel.pngR2i429R3R22R5R128R6tgoR0y54:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fpalette.pngR2i288R3R22R5R129R6tgoR0y52:assets%2Fshared%2Fimages%2FnoteColorMenu%2Fpaste.pngR2i1518R3R22R5R130R6tgoR0y47:assets%2Fshared%2Fimages%2FnoteSkins%2Flist.txtR2i11R3R4R5R131R6tgoR0y59:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-chip.pngR2i169067R3R22R5R132R6tgoR0y59:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-chip.xmlR2i4866R3R4R5R133R6tgoR0y61:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-future.pngR2i571497R3R22R5R134R6tgoR0y61:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets-future.xmlR2i4929R3R4R5R135R6tgoR0y54:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets.pngR2i653659R3R22R5R136R6tgoR0y54:assets%2Fshared%2Fimages%2FnoteSkins%2FNOTE_assets.xmlR2i4913R3R4R5R137R6tgoR0y50:assets%2Fshared%2Fimages%2FnoteSplashes%2Flist.txtR2i33R3R4R5R138R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-diamond.jsonR2i1583R3R4R5R139R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-diamond.pngR2i32456R3R22R5R140R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-diamond.xmlR2i4415R3R4R5R141R6tgoR0y68:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-electric.jsonR2i806R3R4R5R142R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-electric.pngR2i26326R3R22R5R143R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-electric.xmlR2i2584R3R4R5R144R6tgoR0y68:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-sparkles.jsonR2i809R3R4R5R145R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-sparkles.pngR2i22341R3R22R5R146R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-sparkles.xmlR2i2596R3R4R5R147R6tgoR0y67:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-vanilla.jsonR2i1543R3R4R5R148R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-vanilla.pngR2i184255R3R22R5R149R6tgoR0y66:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes-vanilla.xmlR2i4725R3R4R5R150R6tgoR0y59:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes.jsonR2i1519R3R4R5R151R6tgoR0y58:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes.pngR2i33060R3R22R5R152R6tgoR0y58:assets%2Fshared%2Fimages%2FnoteSplashes%2FnoteSplashes.xmlR2i4383R3R4R5R153R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum0.pngR2i1816R3R22R5R154R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum1.pngR2i1779R3R22R5R155R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum2.pngR2i1985R3R22R5R156R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum3.pngR2i1990R3R22R5R157R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum4.pngR2i1955R3R22R5R158R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum5.pngR2i2023R3R22R5R159R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum6.pngR2i2082R3R22R5R160R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum7.pngR2i1881R3R22R5R161R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum8.pngR2i2024R3R22R5R162R6tgoR0y35:assets%2Fshared%2Fimages%2Fnum9.pngR2i1851R3R22R5R163R6tgoR0y50:assets%2Fshared%2Fimages%2FpixelUI%2Fbad-pixel.pngR2i228R3R22R5R164R6tgoR0y52:assets%2Fshared%2Fimages%2FpixelUI%2Fcombo-pixel.pngR2i247R3R22R5R165R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fdate-pixel.pngR2i518R3R22R5R166R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fgood-pixel.pngR2i237R3R22R5R167R6tgoR0y69:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assets-chip.pngR2i1480R3R22R5R168R6tgoR0y71:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assets-future.pngR2i2351R3R22R5R169R6tgoR0y64:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assets.pngR2i3337R3R22R5R170R6tgoR0y73:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assetsENDS-chip.pngR2i246R3R22R5R171R6tgoR0y75:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assetsENDS-future.pngR2i258R3R22R5R172R6tgoR0y68:assets%2Fshared%2Fimages%2FpixelUI%2FnoteSkins%2FNOTE_assetsENDS.pngR2i202R3R22R5R173R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum0-pixel.pngR2i132R3R22R5R174R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum1-pixel.pngR2i160R3R22R5R175R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum2-pixel.pngR2i139R3R22R5R176R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum3-pixel.pngR2i137R3R22R5R177R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum4-pixel.pngR2i132R3R22R5R178R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum5-pixel.pngR2i135R3R22R5R179R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum6-pixel.pngR2i138R3R22R5R180R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum7-pixel.pngR2i141R3R22R5R181R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum8-pixel.pngR2i129R3R22R5R182R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fnum9-pixel.pngR2i127R3R22R5R183R6tgoR0y52:assets%2Fshared%2Fimages%2FpixelUI%2Fready-pixel.pngR2i531R3R22R5R184R6tgoR0y50:assets%2Fshared%2Fimages%2FpixelUI%2Fset-pixel.pngR2i485R3R22R5R185R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fshit-pixel.pngR2i292R3R22R5R186R6tgoR0y51:assets%2Fshared%2Fimages%2FpixelUI%2Fsick-pixel.pngR2i307R3R22R5R187R6tgoR0y36:assets%2Fshared%2Fimages%2Fready.pngR2i28966R3R22R5R188R6tgoR0y34:assets%2Fshared%2Fimages%2Fset.pngR2i25471R3R22R5R189R6tgoR0y35:assets%2Fshared%2Fimages%2Fshit.pngR2i15319R3R22R5R190R6tgoR0y35:assets%2Fshared%2Fimages%2Fsick.pngR2i19249R3R22R5R191R6tgoR0y44:assets%2Fshared%2Fimages%2Fspeech_bubble.pngR2i189234R3R22R5R192R6tgoR0y44:assets%2Fshared%2Fimages%2Fspeech_bubble.xmlR2i9686R3R4R5R193R6tgoR0y49:assets%2Fshared%2Fimages%2Fstorymenu%2Freadme.txtR2i87R3R4R5R194R6tgoR0y38:assets%2Fshared%2Fimages%2FtimeBar.pngR2i367R3R22R5R195R6tgoR0y41:assets%2Fshared%2Fimages%2FtitleEnter.pngR2i26291R3R22R5R196R6tgoR0y41:assets%2Fshared%2Fimages%2FtitleEnter.xmlR2i518R3R4R5R197R6tgoR0y41:assets%2Fshared%2Fimages%2FunknownMod.pngR2i2387R3R22R5R198R6tgoR2i2400129R3y5:MUSICR5y39:assets%2Fshared%2Fmusic%2Fbreakfast.mp3y9:pathGroupaR200hR6tgoR2i2309657R3R199R5y40:assets%2Fshared%2Fmusic%2FfreakyMenu.mp3R201aR202hR6tgoR2i1535999R3R199R5y38:assets%2Fshared%2Fmusic%2FgameOver.mp3R201aR203hR6tgoR2i288391R3R199R5y41:assets%2Fshared%2Fmusic%2FgameOverEnd.mp3R201aR204hR6tgoR2i2402257R3R199R5y40:assets%2Fshared%2Fmusic%2FoffsetSong.mp3R201aR205hR6tgoR2i9693555R3R199R5y38:assets%2Fshared%2Fmusic%2Ftea-time.mp3R201aR206hR6tgoR2i2418R3R199R5y36:assets%2Fshared%2Fsounds%2FANGRY.mp3R201aR207hR6tgoR2i43182R3R199R5y45:assets%2Fshared%2Fsounds%2FANGRY_TEXT_BOX.mp3R201aR208hR6tgoR2i34480R3R199R5y40:assets%2Fshared%2Fsounds%2Fbadnoise1.mp3R201aR209hR6tgoR2i34480R3R199R5y40:assets%2Fshared%2Fsounds%2Fbadnoise2.mp3R201aR210hR6tgoR2i34480R3R199R5y40:assets%2Fshared%2Fsounds%2Fbadnoise3.mp3R201aR211hR6tgoR2i17762R3R199R5y41:assets%2Fshared%2Fsounds%2FcancelMenu.mp3R201aR212hR6tgoR2i5888R3R199R5y40:assets%2Fshared%2Fsounds%2FclickText.mp3R201aR213hR6tgoR2i91950R3R199R5y42:assets%2Fshared%2Fsounds%2FconfirmMenu.mp3R201aR214hR6tgoR2i7351R3R199R5y39:assets%2Fshared%2Fsounds%2Fdialogue.mp3R201aR215hR6tgoR2i13620R3R199R5y44:assets%2Fshared%2Fsounds%2FdialogueClose.mp3R201aR216hR6tgoR2i83302R3R199R5y43:assets%2Fshared%2Fsounds%2Ffnf_loss_sfx.mp3R201aR217hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_1.mp3R201aR218hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_2.mp3R201aR219hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_3.mp3R201aR220hR6tgoR2i34480R3R199R5y35:assets%2Fshared%2Fsounds%2FGF_4.mp3R201aR221hR6tgoR2i8358R3R199R5y39:assets%2Fshared%2Fsounds%2Fhitsound.mp3R201aR222hR6tgoR2i9155R3R199R5y43:assets%2Fshared%2Fsounds%2Fintro1-pixel.mp3R201aR223hR6tgoR2i11426R3R199R5y37:assets%2Fshared%2Fsounds%2Fintro1.mp3R201aR224hR6tgoR2i9912R3R199R5y43:assets%2Fshared%2Fsounds%2Fintro2-pixel.mp3R201aR225hR6tgoR2i12051R3R199R5y37:assets%2Fshared%2Fsounds%2Fintro2.mp3R201aR226hR6tgoR2i9128R3R199R5y43:assets%2Fshared%2Fsounds%2Fintro3-pixel.mp3R201aR227hR6tgoR2i11582R3R199R5y37:assets%2Fshared%2Fsounds%2Fintro3.mp3R201aR228hR6tgoR2i21651R3R199R5y44:assets%2Fshared%2Fsounds%2FintroGo-pixel.mp3R201aR229hR6tgoR2i13254R3R199R5y38:assets%2Fshared%2Fsounds%2FintroGo.mp3R201aR230hR6tgoR2i6268R3R199R5y45:assets%2Fshared%2Fsounds%2FMetronome_Tick.mp3R201aR231hR6tgoR2i68962R3R199R5y40:assets%2Fshared%2Fsounds%2Fmissnote1.mp3R201aR232hR6tgoR2i68962R3R199R5y40:assets%2Fshared%2Fsounds%2Fmissnote2.mp3R201aR233hR6tgoR2i68962R3R199R5y40:assets%2Fshared%2Fsounds%2Fmissnote3.mp3R201aR234hR6tgoR2i17762R3R199R5y41:assets%2Fshared%2Fsounds%2FscrollMenu.mp3R201aR235hR6tgoR2i42970R3R199R5y37:assets%2Fshared%2Fsounds%2Fsecret.mp3R201aR236hR6tgoR0y45:assets%2Fshared%2Fsounds%2Fsounds-go-here.txtR2zR3R4R5R237R6tgoR2i320854R3R199R5y40:assets%2Fshared%2Fsounds%2FsoundTest.mp3R201aR238hR6tgoR0y37:assets%2Fshared%2Fstages%2Freadme.txtR2i31R3R4R5R239R6tgoR0y38:assets%2Fshared%2Fweeks%2FweekList.txtR2i59R3R4R5R240R6tgoR0y51:assets%2Fembed%2Fimages%2Fpsych-ui%2Farrow_down.pngR2i271R3R22R5R241R6tgoR0y49:assets%2Fembed%2Fimages%2Fpsych-ui%2Farrow_up.pngR2i275R3R22R5R242R6tgoR0y49:assets%2Fembed%2Fimages%2Fpsych-ui%2Fcheckbox.pngR2i206R3R22R5R243R6tgoR0y56:assets%2Fembed%2Fimages%2Fpsych-ui%2Fdropdown_button.pngR2i226R3R22R5R244R6tgoR0y46:assets%2Fembed%2Fimages%2Fpsych-ui%2Fradio.pngR2i257R3R22R5R245R6tgoR0y54:assets%2Fembed%2Fimages%2Fpsych-ui%2Fstepper_minus.pngR2i167R3R22R5R246R6tgoR0y53:assets%2Fembed%2Fimages%2Fpsych-ui%2Fstepper_plus.pngR2i177R3R22R5R247R6tgoR0y27:assets%2Fsongs%2Freadme.txtR2i115R3R4R5R248R6tgoR0y19:assets%2Freadme.txtR2i407R3R4R5R249R6tgoR0y37:assets%2Fshared%2Fimages%2FBBBump.pngR2i445106R3R22R5R250R6tgoR0y37:assets%2Fshared%2Fimages%2FBBBump.xmlR2i2630R3R4R5R251R6tgoR0y40:assets%2Fshared%2Fimages%2FPessyBump.pngR2i1536636R3R22R5R252R6tgoR0y40:assets%2Fshared%2Fimages%2FPessyBump.xmlR2i4468R3R4R5R253R6tgoR0y41:assets%2Fshared%2Fimages%2FShadowBump.pngR2i25238R3R22R5R254R6tgoR0y41:assets%2Fshared%2Fimages%2FShadowBump.xmlR2i2305R3R4R5R255R6tgoR0y41:assets%2Fshared%2Fimages%2FZRiverBump.pngR2i1178873R3R22R5R256R6tgoR0y41:assets%2Fshared%2Fimages%2FZRiverBump.xmlR2i2328R3R4R5R257R6tgoR0y28:assets%2Fshared%2Freadme.txtR2i75R3R4R5R258R6tgoR2i122290R3R199R5y39:assets%2Fshared%2Fsounds%2FJingleBB.mp3R201aR259hR6tgoR2i249642R3R199R5y42:assets%2Fshared%2Fsounds%2FJinglePessy.mp3R201aR260hR6tgoR2i186029R3R199R5y42:assets%2Fshared%2Fsounds%2FJingleRiver.mp3R201aR261hR6tgoR2i178714R3R199R5y43:assets%2Fshared%2Fsounds%2FJingleShadow.mp3R201aR262hR6tgoR0y35:assets%2Fshared%2Fdata%2Fpt-BR.langR2i12493R3R4R5R263R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_credits.pngR2i75937R3R22R5R264R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_credits.xmlR2i1344R3R4R5R265R6tgoR0y65:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_story_mode.pngR2i104675R3R22R5R266R6tgoR0y65:assets%2Fshared%2Fimages%2Fpt-BR%2Fmainmenu%2Fmenu_story_mode.xmlR2i1381R3R4R5R267R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmenudifficulties%2Feasy.pngR2i3656R3R22R5R268R6tgoR0y62:assets%2Fshared%2Fimages%2Fpt-BR%2Fmenudifficulties%2Fhard.pngR2i4514R3R22R5R269R6tgoR0y50:assets%2Fshared%2Fimages%2Fpt-BR%2FMenu_Tracks.pngR2i1885R3R22R5R270R6tgoR0y42:assets%2Fshared%2Fcharacters%2Fbf-car.jsonR2i2527R3R4R5R271R6tgoR0y48:assets%2Fshared%2Fcharacters%2Fbf-christmas.jsonR2i1747R3R4R5R272R6tgoR0y54:assets%2Fshared%2Fcharacters%2Fbf-holding-gf-dead.jsonR2i740R3R4R5R273R6tgoR0y49:assets%2Fshared%2Fcharacters%2Fbf-holding-gf.jsonR2i1778R3R4R5R274R6tgoR0y49:assets%2Fshared%2Fcharacters%2Fbf-pixel-dead.jsonR2i721R3R4R5R275R6tgoR0y53:assets%2Fshared%2Fcharacters%2Fbf-pixel-opponent.jsonR2i1567R3R4R5R276R6tgoR0y44:assets%2Fshared%2Fcharacters%2Fbf-pixel.jsonR2i1563R3R4R5R277R6tgoR0y39:assets%2Fshared%2Fcharacters%2Fdad.jsonR2i1762R3R4R5R278R6tgoR0y50:assets%2Fshared%2Fcharacters%2Fdarnell-blazin.jsonR2i3051R3R4R5R279R6tgoR0y43:assets%2Fshared%2Fcharacters%2Fdarnell.jsonR2i2205R3R4R5R280R6tgoR0y42:assets%2Fshared%2Fcharacters%2Fgf-car.jsonR2i993R3R4R5R281R6tgoR0y48:assets%2Fshared%2Fcharacters%2Fgf-christmas.jsonR2i1077R3R4R5R282R6tgoR0y44:assets%2Fshared%2Fcharacters%2Fgf-pixel.jsonR2i937R3R4R5R283R6tgoR0y46:assets%2Fshared%2Fcharacters%2Fgf-tankmen.jsonR2i1066R3R4R5R284R6tgoR0y43:assets%2Fshared%2Fcharacters%2Fmom-car.jsonR2i1892R3R4R5R285R6tgoR0y39:assets%2Fshared%2Fcharacters%2Fmom.jsonR2i988R3R4R5R286R6tgoR0y53:assets%2Fshared%2Fcharacters%2Fmonster-christmas.jsonR2i1905R3R4R5R287R6tgoR0y43:assets%2Fshared%2Fcharacters%2Fmonster.jsonR2i1904R3R4R5R288R6tgoR0y40:assets%2Fshared%2Fcharacters%2Fnene.jsonR2i1609R3R4R5R289R6tgoR0y53:assets%2Fshared%2Fcharacters%2Fparents-christmas.jsonR2i3427R3R4R5R290R6tgoR0y47:assets%2Fshared%2Fcharacters%2Fpico-blazin.jsonR2i4897R3R4R5R291R6tgoR0y45:assets%2Fshared%2Fcharacters%2Fpico-dead.jsonR2i812R3R4R5R292R6tgoR0y55:assets%2Fshared%2Fcharacters%2Fpico-explosion-dead.jsonR2i1599R3R4R5R293R6tgoR0y49:assets%2Fshared%2Fcharacters%2Fpico-playable.jsonR2i2416R3R4R5R294R6tgoR0y48:assets%2Fshared%2Fcharacters%2Fpico-speaker.jsonR2i1554R3R4R5R295R6tgoR0y40:assets%2Fshared%2Fcharacters%2Fpico.jsonR2i1636R3R4R5R296R6tgoR0y48:assets%2Fshared%2Fcharacters%2Fsenpai-angry.jsonR2i1039R3R4R5R297R6tgoR0y42:assets%2Fshared%2Fcharacters%2Fsenpai.jsonR2i1009R3R4R5R298R6tgoR0y42:assets%2Fshared%2Fcharacters%2Fspirit.jsonR2i992R3R4R5R299R6tgoR0y42:assets%2Fshared%2Fcharacters%2Fspooky.jsonR2i1497R3R4R5R300R6tgoR0y52:assets%2Fshared%2Fcharacters%2Ftankman-playable.jsonR2i1976R3R4R5R301R6tgoR0y43:assets%2Fshared%2Fcharacters%2Ftankman.jsonR2i1974R3R4R5R302R6tgoR0y46:assets%2Fshared%2Fdata%2F2hot%2F2hot-easy.jsonR2i34276R3R4R5R303R6tgoR0y46:assets%2Fshared%2Fdata%2F2hot%2F2hot-hard.jsonR2i41341R3R4R5R304R6tgoR0y41:assets%2Fshared%2Fdata%2F2hot%2F2hot.jsonR2i37148R3R4R5R305R6tgoR0y45:assets%2Fshared%2Fdata%2F2hot%2Fnotetypes.txtR2i90R3R4R5R306R6tgoR0y44:assets%2Fshared%2Fdata%2F2hot%2Fpreload.jsonR2i248R3R4R5R307R6tgoR0y52:assets%2Fshared%2Fdata%2Fblammed%2Fblammed-easy.jsonR2i16997R3R4R5R308R6tgoR0y52:assets%2Fshared%2Fdata%2Fblammed%2Fblammed-hard.jsonR2i26647R3R4R5R309R6tgoR0y47:assets%2Fshared%2Fdata%2Fblammed%2Fblammed.jsonR2i20188R3R4R5R310R6tgoR0y46:assets%2Fshared%2Fdata%2Fblammed%2Fevents.jsonR2i10120R3R4R5R311R6tgoR0y50:assets%2Fshared%2Fdata%2Fblazin%2Fblazin-easy.jsonR2i30302R3R4R5R312R6tgoR0y50:assets%2Fshared%2Fdata%2Fblazin%2Fblazin-hard.jsonR2i31173R3R4R5R313R6tgoR0y45:assets%2Fshared%2Fdata%2Fblazin%2Fblazin.jsonR2i30479R3R4R5R314R6tgoR0y47:assets%2Fshared%2Fdata%2Fblazin%2Fnotetypes.txtR2i453R3R4R5R315R6tgoR0y52:assets%2Fshared%2Fdata%2Fbopeebo%2Fbopeebo-easy.jsonR2i9152R3R4R5R316R6tgoR0y52:assets%2Fshared%2Fdata%2Fbopeebo%2Fbopeebo-hard.jsonR2i8740R3R4R5R317R6tgoR0y47:assets%2Fshared%2Fdata%2Fbopeebo%2Fbopeebo.jsonR2i9516R3R4R5R318R6tgoR0y46:assets%2Fshared%2Fdata%2Fbopeebo%2Fevents.jsonR2i1376R3R4R5R319R6tgoR0y48:assets%2Fshared%2Fdata%2Fcocoa%2Fcocoa-easy.jsonR2i15456R3R4R5R320R6tgoR0y48:assets%2Fshared%2Fdata%2Fcocoa%2Fcocoa-hard.jsonR2i24979R3R4R5R321R6tgoR0y43:assets%2Fshared%2Fdata%2Fcocoa%2Fcocoa.jsonR2i18876R3R4R5R322R6tgoR0y44:assets%2Fshared%2Fdata%2Fcocoa%2Fevents.jsonR2i475R3R4R5R323R6tgoR0y58:assets%2Fshared%2Fdata%2Fdad-battle%2Fdad-battle-easy.jsonR2i16535R3R4R5R324R6tgoR0y58:assets%2Fshared%2Fdata%2Fdad-battle%2Fdad-battle-hard.jsonR2i21485R3R4R5R325R6tgoR0y53:assets%2Fshared%2Fdata%2Fdad-battle%2Fdad-battle.jsonR2i19184R3R4R5R326R6tgoR0y49:assets%2Fshared%2Fdata%2Fdad-battle%2Fevents.jsonR2i2408R3R4R5R327R6tgoR0y52:assets%2Fshared%2Fdata%2Fdarnell%2Fdarnell-easy.jsonR2i22922R3R4R5R328R6tgoR0y52:assets%2Fshared%2Fdata%2Fdarnell%2Fdarnell-hard.jsonR2i27351R3R4R5R329R6tgoR0y47:assets%2Fshared%2Fdata%2Fdarnell%2Fdarnell.jsonR2i24139R3R4R5R330R6tgoR0y50:assets%2Fshared%2Fdata%2Feggnog%2Feggnog-easy.jsonR2i20347R3R4R5R331R6tgoR0y50:assets%2Fshared%2Fdata%2Feggnog%2Feggnog-hard.jsonR2i27126R3R4R5R332R6tgoR0y45:assets%2Fshared%2Fdata%2Feggnog%2Feggnog.jsonR2i23364R3R4R5R333R6tgoR0y45:assets%2Fshared%2Fdata%2Feggnog%2Fevents.jsonR2i2007R3R4R5R334R6tgoR0y44:assets%2Fshared%2Fdata%2Ffresh%2Fevents.jsonR2i425R3R4R5R335R6tgoR0y48:assets%2Fshared%2Fdata%2Ffresh%2Ffresh-easy.jsonR2i12895R3R4R5R336R6tgoR0y48:assets%2Fshared%2Fdata%2Ffresh%2Ffresh-hard.jsonR2i15861R3R4R5R337R6tgoR0y43:assets%2Fshared%2Fdata%2Ffresh%2Ffresh.jsonR2i14695R3R4R5R338R6tgoR0y46:assets%2Fshared%2Fdata%2Fguns%2Fguns-easy.jsonR2i32978R3R4R5R339R6tgoR0y46:assets%2Fshared%2Fdata%2Fguns%2Fguns-hard.jsonR2i55947R3R4R5R340R6tgoR0y41:assets%2Fshared%2Fdata%2Fguns%2Fguns.jsonR2i47550R3R4R5R341R6tgoR0y43:assets%2Fshared%2Fdata%2Fhigh%2Fevents.jsonR2i605R3R4R5R342R6tgoR0y46:assets%2Fshared%2Fdata%2Fhigh%2Fhigh-easy.jsonR2i19062R3R4R5R343R6tgoR0y46:assets%2Fshared%2Fdata%2Fhigh%2Fhigh-hard.jsonR2i27473R3R4R5R344R6tgoR0y41:assets%2Fshared%2Fdata%2Fhigh%2Fhigh.jsonR2i22431R3R4R5R345R6tgoR0y50:assets%2Fshared%2Fdata%2Flit-up%2Flit-up-easy.jsonR2i27214R3R4R5R346R6tgoR0y50:assets%2Fshared%2Fdata%2Flit-up%2Flit-up-hard.jsonR2i32258R3R4R5R347R6tgoR0y45:assets%2Fshared%2Fdata%2Flit-up%2Flit-up.jsonR2i29994R3R4R5R348R6tgoR0y43:assets%2Fshared%2Fdata%2Fmilf%2Fevents.jsonR2i2641R3R4R5R349R6tgoR0y46:assets%2Fshared%2Fdata%2Fmilf%2Fmilf-easy.jsonR2i29078R3R4R5R350R6tgoR0y46:assets%2Fshared%2Fdata%2Fmilf%2Fmilf-hard.jsonR2i41528R3R4R5R351R6tgoR0y41:assets%2Fshared%2Fdata%2Fmilf%2Fmilf.jsonR2i33648R3R4R5R352R6tgoR0y52:assets%2Fshared%2Fdata%2Fmonster%2Fmonster-easy.jsonR2i25651R3R4R5R353R6tgoR0y52:assets%2Fshared%2Fdata%2Fmonster%2Fmonster-hard.jsonR2i30438R3R4R5R354R6tgoR0y47:assets%2Fshared%2Fdata%2Fmonster%2Fmonster.jsonR2i28596R3R4R5R355R6tgoR0y50:assets%2Fshared%2Fdata%2Fphilly-nice%2Fevents.jsonR2i799R3R4R5R356R6tgoR0y60:assets%2Fshared%2Fdata%2Fphilly-nice%2Fphilly-nice-easy.jsonR2i16102R3R4R5R357R6tgoR0y60:assets%2Fshared%2Fdata%2Fphilly-nice%2Fphilly-nice-hard.jsonR2i28453R3R4R5R358R6tgoR0y55:assets%2Fshared%2Fdata%2Fphilly-nice%2Fphilly-nice.jsonR2i21706R3R4R5R359R6tgoR0y46:assets%2Fshared%2Fdata%2Fpico%2Fpico-easy.jsonR2i12667R3R4R5R360R6tgoR0y46:assets%2Fshared%2Fdata%2Fpico%2Fpico-hard.jsonR2i20025R3R4R5R361R6tgoR0y41:assets%2Fshared%2Fdata%2Fpico%2Fpico.jsonR2i16519R3R4R5R362R6tgoR0y43:assets%2Fshared%2Fdata%2Fridge%2Fridge.jsonR2i23095R3R4R5R363R6tgoR0y44:assets%2Fshared%2Fdata%2Froses%2Fevents.jsonR2i163R3R4R5R364R6tgoR0y48:assets%2Fshared%2Fdata%2Froses%2Froses-easy.jsonR2i14965R3R4R5R365R6tgoR0y48:assets%2Fshared%2Fdata%2Froses%2Froses-hard.jsonR2i25408R3R4R5R366R6tgoR0y43:assets%2Fshared%2Fdata%2Froses%2Froses.jsonR2i20277R3R4R5R367R6tgoR0y50:assets%2Fshared%2Fdata%2Froses%2FrosesDialogue.txtR2i153R3R4R5R368R6tgoR0y56:assets%2Fshared%2Fdata%2Froses%2FrosesDialogue_pt-BR.txtR2i161R3R4R5R369R6tgoR0y52:assets%2Fshared%2Fdata%2Fsatin-panties%2Fevents.jsonR2i268R3R4R5R370R6tgoR0y64:assets%2Fshared%2Fdata%2Fsatin-panties%2Fsatin-panties-easy.jsonR2i19859R3R4R5R371R6tgoR0y64:assets%2Fshared%2Fdata%2Fsatin-panties%2Fsatin-panties-hard.jsonR2i30335R3R4R5R372R6tgoR0y59:assets%2Fshared%2Fdata%2Fsatin-panties%2Fsatin-panties.jsonR2i24987R3R4R5R373R6tgoR0y50:assets%2Fshared%2Fdata%2Fsenpai%2Fsenpai-easy.jsonR2i19686R3R4R5R374R6tgoR0y50:assets%2Fshared%2Fdata%2Fsenpai%2Fsenpai-hard.jsonR2i24468R3R4R5R375R6tgoR0y45:assets%2Fshared%2Fdata%2Fsenpai%2Fsenpai.jsonR2i22368R3R4R5R376R6tgoR0y52:assets%2Fshared%2Fdata%2Fsenpai%2FsenpaiDialogue.txtR2i162R3R4R5R377R6tgoR0y58:assets%2Fshared%2Fdata%2Fsenpai%2FsenpaiDialogue_pt-BR.txtR2i160R3R4R5R378R6tgoR0y43:assets%2Fshared%2Fdata%2Fsmash%2Fsmash.jsonR2i23965R3R4R5R379R6tgoR0y48:assets%2Fshared%2Fdata%2Fsouth%2Fsouth-easy.jsonR2i18051R3R4R5R380R6tgoR0y48:assets%2Fshared%2Fdata%2Fsouth%2Fsouth-hard.jsonR2i22748R3R4R5R381R6tgoR0y43:assets%2Fshared%2Fdata%2Fsouth%2Fsouth.jsonR2i22553R3R4R5R382R6tgoR0y54:assets%2Fshared%2Fdata%2Fspookeez%2Fspookeez-easy.jsonR2i19674R3R4R5R383R6tgoR0y54:assets%2Fshared%2Fdata%2Fspookeez%2Fspookeez-hard.jsonR2i24735R3R4R5R384R6tgoR0y49:assets%2Fshared%2Fdata%2Fspookeez%2Fspookeez.jsonR2i22861R3R4R5R385R6tgoR0y45:assets%2Fshared%2Fdata%2Fstress%2Fevents.jsonR2i502R3R4R5R386R6tgoR0y50:assets%2Fshared%2Fdata%2Fstress%2Fpicospeaker.jsonR2i18234R3R4R5R387R6tgoR0y46:assets%2Fshared%2Fdata%2Fstress%2Fpreload.jsonR2i31R3R4R5R388R6tgoR0y50:assets%2Fshared%2Fdata%2Fstress%2Fstress-easy.jsonR2i33357R3R4R5R389R6tgoR0y50:assets%2Fshared%2Fdata%2Fstress%2Fstress-hard.jsonR2i53581R3R4R5R390R6tgoR0y45:assets%2Fshared%2Fdata%2Fstress%2Fstress.jsonR2i45830R3R4R5R391R6tgoR0y41:assets%2Fshared%2Fdata%2Ftest%2Ftest.jsonR2i28621R3R4R5R392R6tgoR0y45:assets%2Fshared%2Fdata%2Fthorns%2Fevents.jsonR2i5082R3R4R5R393R6tgoR0y50:assets%2Fshared%2Fdata%2Fthorns%2Fthorns-easy.jsonR2i21740R3R4R5R394R6tgoR0y50:assets%2Fshared%2Fdata%2Fthorns%2Fthorns-hard.jsonR2i35313R3R4R5R395R6tgoR0y45:assets%2Fshared%2Fdata%2Fthorns%2Fthorns.jsonR2i27842R3R4R5R396R6tgoR0y52:assets%2Fshared%2Fdata%2Fthorns%2FthornsDialogue.txtR2i305R3R4R5R397R6tgoR0y58:assets%2Fshared%2Fdata%2Fthorns%2FthornsDialogue_pt-BR.txtR2i344R3R4R5R398R6tgoR0y47:assets%2Fshared%2Fdata%2Ftutorial%2Fevents.jsonR2i230R3R4R5R399R6tgoR0y54:assets%2Fshared%2Fdata%2Ftutorial%2Ftutorial-easy.jsonR2i5767R3R4R5R400R6tgoR0y54:assets%2Fshared%2Fdata%2Ftutorial%2Ftutorial-hard.jsonR2i6640R3R4R5R401R6tgoR0y49:assets%2Fshared%2Fdata%2Ftutorial%2Ftutorial.jsonR2i5767R3R4R5R402R6tgoR0y42:assets%2Fshared%2Fdata%2Fugh%2Fevents.jsonR2i1116R3R4R5R403R6tgoR0y44:assets%2Fshared%2Fdata%2Fugh%2Fugh-easy.jsonR2i19226R3R4R5R404R6tgoR0y44:assets%2Fshared%2Fdata%2Fugh%2Fugh-hard.jsonR2i30496R3R4R5R405R6tgoR0y39:assets%2Fshared%2Fdata%2Fugh%2Fugh.jsonR2i27380R3R4R5R406R6tgoR0y56:assets%2Fshared%2Fdata%2Fwinter-horrorland%2Fevents.jsonR2i672R3R4R5R407R6tgoR0y72:assets%2Fshared%2Fdata%2Fwinter-horrorland%2Fwinter-horrorland-easy.jsonR2i24208R3R4R5R408R6tgoR0y72:assets%2Fshared%2Fdata%2Fwinter-horrorland%2Fwinter-horrorland-hard.jsonR2i31366R3R4R5R409R6tgoR0y67:assets%2Fshared%2Fdata%2Fwinter-horrorland%2Fwinter-horrorland.jsonR2i26736R3R4R5R410R6tgoR0y54:assets%2Fshared%2Fimages%2Fachievements%2Fdebugger.pngR2i7554R3R22R5R411R6tgoR0y62:assets%2Fshared%2Fimages%2Fachievements%2Fpessy_easter_egg.pngR2i17353R3R22R5R412R6tgoR0y65:assets%2Fshared%2Fimages%2Fachievements%2Froadkill_enthusiast.pngR2i5996R3R22R5R413R6tgoR0y58:assets%2Fshared%2Fimages%2Fachievements%2Fweek1_nomiss.pngR2i20155R3R22R5R414R6tgoR0y58:assets%2Fshared%2Fimages%2Fachievements%2Fweek2_nomiss.pngR2i9304R3R22R5R415R6tgoR0y58:assets%2Fshared%2Fimages%2Fachievements%2Fweek3_nomiss.pngR2i21984R3R22R5R416R6tgoR0y58:assets%2Fshared%2Fimages%2Fachievements%2Fweek4_nomiss.pngR2i13430R3R22R5R417R6tgoR0y58:assets%2Fshared%2Fimages%2Fachievements%2Fweek5_nomiss.pngR2i21894R3R22R5R418R6tgoR0y64:assets%2Fshared%2Fimages%2Fachievements%2Fweek6_nomiss-pixel.pngR2i552R3R22R5R419R6tgoR0y58:assets%2Fshared%2Fimages%2Fachievements%2Fweek7_nomiss.pngR2i7249R3R22R5R420R6tgoR0y61:assets%2Fshared%2Fimages%2Fachievements%2Fweekend1_nomiss.pngR2i14360R3R22R5R421R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2FbfAndGF.pngR2i2364346R3R22R5R422R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2FbfAndGF.xmlR2i43566R3R4R5R423R6tgoR0y49:assets%2Fshared%2Fimages%2Fcharacters%2FbfCar.pngR2i1058619R3R22R5R424R6tgoR0y49:assets%2Fshared%2Fimages%2Fcharacters%2FbfCar.xmlR2i38250R3R4R5R425R6tgoR0y55:assets%2Fshared%2Fimages%2Fcharacters%2FbfChristmas.pngR2i469758R3R22R5R426R6tgoR0y55:assets%2Fshared%2Fimages%2Fcharacters%2FbfChristmas.xmlR2i41586R3R4R5R427R6tgoR0y60:assets%2Fshared%2Fimages%2Fcharacters%2FbfHoldingGF-DEAD.pngR2i2217171R3R22R5R428R6tgoR0y60:assets%2Fshared%2Fimages%2Fcharacters%2FbfHoldingGF-DEAD.xmlR2i16014R3R4R5R429R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2FbfPixel.pngR2i12234R3R22R5R430R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2FbfPixel.xmlR2i11162R3R4R5R431R6tgoR0y56:assets%2Fshared%2Fimages%2Fcharacters%2FbfPixelsDEAD.pngR2i71710R3R22R5R432R6tgoR0y56:assets%2Fshared%2Fimages%2Fcharacters%2FbfPixelsDEAD.xmlR2i10143R3R4R5R433R6tgoR0y57:assets%2Fshared%2Fimages%2Fcharacters%2FDADDY_DEAREST.pngR2i633568R3R22R5R434R6tgoR0y57:assets%2Fshared%2Fimages%2Fcharacters%2FDADDY_DEAREST.xmlR2i16969R3R4R5R435R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2Fdarnell.pngR2i3079662R3R22R5R436R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2Fdarnell.xmlR2i28116R3R4R5R437R6tgoR0y70:assets%2Fshared%2Fimages%2Fcharacters%2FdarnellBlazin%2FAnimation.jsonR2i146044R3R4R5R438R6tgoR0y71:assets%2Fshared%2Fimages%2Fcharacters%2FdarnellBlazin%2Fspritemap1.jsonR2i7111R3R4R5R439R6tgoR0y70:assets%2Fshared%2Fimages%2Fcharacters%2FdarnellBlazin%2Fspritemap1.pngR2i1024750R3R22R5R440R6tgoR0y49:assets%2Fshared%2Fimages%2Fcharacters%2FgfCar.pngR2i1173632R3R22R5R441R6tgoR0y49:assets%2Fshared%2Fimages%2Fcharacters%2FgfCar.xmlR2i5000R3R4R5R442R6tgoR0y55:assets%2Fshared%2Fimages%2Fcharacters%2FgfChristmas.pngR2i8223557R3R22R5R443R6tgoR0y55:assets%2Fshared%2Fimages%2Fcharacters%2FgfChristmas.xmlR2i8151R3R4R5R444R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2FgfPixel.pngR2i8824R3R22R5R445R6tgoR0y51:assets%2Fshared%2Fimages%2Fcharacters%2FgfPixel.xmlR2i2414R3R4R5R446R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FgfTankmen.pngR2i1898653R3R22R5R447R6tgoR0y53:assets%2Fshared%2Fimages%2Fcharacters%2FgfTankmen.xmlR2i7570R3R4R5R448R6tgoR0y50:assets%2Fshared%2Fimages%2Fcharacters%2FmomCar.pngR2i2005409R3R22R5R449R6tgoR0y50:assets%2Fshared%2Fimages%2Fcharacters%2FmomCar.xmlR2i8902R3R4R5R450R6tgoR0y54:assets%2Fshared%2Fimages%2Fcharacters%2FMom_Assets.pngR2i1084995R3R22R5R451R6tgoR0y54:assets%2Fshared%2Fimages%2Fcharacters%2FMom_Assets.xmlR2i8667R3R4R5R452R6tgoR0y68:assets%2Fshared%2Fimages%2Fcharacters%2Fmom_dad_christmas_assets.pngR2i4993854R3R22R5R453R6tgoR0y68:assets%2Fshared%2Fimages%2Fcharacters%2Fmom_dad_christmas_assets.xmlR2i19356R3R4R5R454R6tgoR0y60:assets%2Fshared%2Fimages%2Fcharacters%2FmonsterChristmas.pngR2i801037R3R22R5R455R6tgoR0y60:assets%2Fshared%2Fimages%2Fcharacters%2FmonsterChristmas.xmlR2i14973R3R4R5R456R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FMonster_Assets.pngR2i1301060R3R22R5R457R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FMonster_Assets.xmlR2i14911R3R4R5R458R6tgoR0y48:assets%2Fshared%2Fimages%2Fcharacters%2FNene.pngR2i977467R3R22R5R459R6tgoR0y48:assets%2Fshared%2Fimages%2Fcharacters%2FNene.xmlR2i17498R3R4R5R460R6tgoR0y66:assets%2Fshared%2Fimages%2Fcharacters%2FpicoAnims%2FPico_Intro.pngR2i1843557R3R22R5R461R6tgoR0y66:assets%2Fshared%2Fimages%2Fcharacters%2FpicoAnims%2FPico_Intro.xmlR2i31051R3R4R5R462R6tgoR0y69:assets%2Fshared%2Fimages%2Fcharacters%2FpicoAnims%2FPico_Shooting.pngR2i745654R3R22R5R463R6tgoR0y69:assets%2Fshared%2Fimages%2Fcharacters%2FpicoAnims%2FPico_Shooting.xmlR2i5576R3R4R5R464R6tgoR0y67:assets%2Fshared%2Fimages%2Fcharacters%2FpicoBlazin%2FAnimation.jsonR2i464722R3R4R5R465R6tgoR0y68:assets%2Fshared%2Fimages%2Fcharacters%2FpicoBlazin%2Fspritemap1.jsonR2i10504R3R4R5R466R6tgoR0y67:assets%2Fshared%2Fimages%2Fcharacters%2FpicoBlazin%2Fspritemap1.pngR2i1381498R3R22R5R467R6tgoR0y75:assets%2Fshared%2Fimages%2Fcharacters%2FpicoExplosionDeath%2FAnimation.jsonR2i699364R3R4R5R468R6tgoR0y76:assets%2Fshared%2Fimages%2Fcharacters%2FpicoExplosionDeath%2Fspritemap1.jsonR2i12699R3R4R5R469R6tgoR0y75:assets%2Fshared%2Fimages%2Fcharacters%2FpicoExplosionDeath%2Fspritemap1.pngR2i2119886R3R22R5R470R6tgoR0y55:assets%2Fshared%2Fimages%2Fcharacters%2FpicoSpeaker.pngR2i3328241R3R22R5R471R6tgoR0y55:assets%2Fshared%2Fimages%2Fcharacters%2FpicoSpeaker.xmlR2i27650R3R4R5R472R6tgoR0y54:assets%2Fshared%2Fimages%2Fcharacters%2FPico_Death.pngR2i4680448R3R22R5R473R6tgoR0y54:assets%2Fshared%2Fimages%2Fcharacters%2FPico_Death.xmlR2i9892R3R4R5R474R6tgoR0y60:assets%2Fshared%2Fimages%2Fcharacters%2FPico_FNF_assetss.pngR2i1021295R3R22R5R475R6tgoR0y60:assets%2Fshared%2Fimages%2Fcharacters%2FPico_FNF_assetss.xmlR2i24093R3R4R5R476R6tgoR0y50:assets%2Fshared%2Fimages%2Fcharacters%2Fsenpai.pngR2i31515R3R22R5R477R6tgoR0y50:assets%2Fshared%2Fimages%2Fcharacters%2Fsenpai.xmlR2i14911R3R4R5R478R6tgoR0y50:assets%2Fshared%2Fimages%2Fcharacters%2Fspirit.pngR2i90995R3R22R5R479R6tgoR0y50:assets%2Fshared%2Fimages%2Fcharacters%2Fspirit.txtR2i2872R3R4R5R480R6tgoR0y62:assets%2Fshared%2Fimages%2Fcharacters%2Fspooky_kids_assets.pngR2i287740R3R22R5R481R6tgoR0y62:assets%2Fshared%2Fimages%2Fcharacters%2Fspooky_kids_assets.xmlR2i15597R3R4R5R482R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FtankmanCaptain.pngR2i1418716R3R22R5R483R6tgoR0y58:assets%2Fshared%2Fimages%2Fcharacters%2FtankmanCaptain.xmlR2i34418R3R4R5R484R6tgoR0y50:assets%2Fshared%2Fimages%2Ficons%2Ficon-bf-old.pngR2i4101R3R22R5R485R6tgoR0y52:assets%2Fshared%2Fimages%2Ficons%2Ficon-bf-pixel.pngR2i538R3R22R5R486R6tgoR0y51:assets%2Fshared%2Fimages%2Ficons%2Ficon-darnell.pngR2i16047R3R22R5R487R6tgoR0y47:assets%2Fshared%2Fimages%2Ficons%2Ficon-mom.pngR2i9237R3R22R5R488R6tgoR0y51:assets%2Fshared%2Fimages%2Ficons%2Ficon-monster.pngR2i17792R3R22R5R489R6tgoR0y51:assets%2Fshared%2Fimages%2Ficons%2Ficon-parents.pngR2i15547R3R22R5R490R6tgoR0y48:assets%2Fshared%2Fimages%2Ficons%2Ficon-pico.pngR2i14208R3R22R5R491R6tgoR0y56:assets%2Fshared%2Fimages%2Ficons%2Ficon-senpai-pixel.pngR2i622R3R22R5R492R6tgoR0y56:assets%2Fshared%2Fimages%2Ficons%2Ficon-spirit-pixel.pngR2i509R3R22R5R493R6tgoR0y50:assets%2Fshared%2Fimages%2Ficons%2Ficon-spooky.pngR2i6907R3R22R5R494R6tgoR0y51:assets%2Fshared%2Fimages%2Ficons%2Ficon-tankman.pngR2i3493R3R22R5R495R6tgoR0y63:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_christmas.pngR2i16696R3R22R5R496R6tgoR0y63:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_halloween.pngR2i7474R3R22R5R497R6tgoR0y58:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_limo.pngR2i6842R3R22R5R498R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_philly.pngR2i19689R3R22R5R499R6tgoR0y67:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_phillystreets.pngR2i231975R3R22R5R500R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_school.pngR2i1963R3R22R5R501R6tgoR0y59:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_stage.pngR2i21287R3R22R5R502R6tgoR0y58:assets%2Fshared%2Fimages%2Fmenubackgrounds%2Fmenu_tank.pngR2i21289R3R22R5R503R6tgoR0y52:assets%2Fshared%2Fimages%2Fmenucharacters%2Fdad.jsonR2i149R3R4R5R504R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenucharacters%2Fdarnell.jsonR2i148R3R4R5R505R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2Fdarnell.pngR2i111575R3R22R5R506R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2Fdarnell.xmlR2i2244R3R4R5R507R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Dad.pngR2i111851R3R22R5R508R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Dad.xmlR2i2115R3R4R5R509R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Mom.pngR2i152414R3R22R5R510R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Mom.xmlR2i2113R3R4R5R511R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Parents.pngR2i335745R3R22R5R512R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Parents.xmlR2i2188R3R4R5R513R6tgoR0y57:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Pico.pngR2i109825R3R22R5R514R6tgoR0y57:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Pico.xmlR2i2142R3R4R5R515R6tgoR0y59:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Senpai.pngR2i64463R3R22R5R516R6tgoR0y59:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Senpai.xmlR2i1348R3R4R5R517R6tgoR0y64:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Spooky_Kids.pngR2i80071R3R22R5R518R6tgoR0y64:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Spooky_Kids.xmlR2i2543R3R4R5R519R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Tankman.pngR2i117065R3R22R5R520R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenucharacters%2FMenu_Tankman.xmlR2i2164R3R4R5R521R6tgoR0y52:assets%2Fshared%2Fimages%2Fmenucharacters%2Fmom.jsonR2i117R3R4R5R522R6tgoR0y53:assets%2Fshared%2Fimages%2Fmenucharacters%2Fnene.jsonR2i152R3R4R5R523R6tgoR0y52:assets%2Fshared%2Fimages%2Fmenucharacters%2Fnene.pngR2i862899R3R22R5R524R6tgoR0y52:assets%2Fshared%2Fimages%2Fmenucharacters%2Fnene.xmlR2i4261R3R4R5R525R6tgoR0y66:assets%2Fshared%2Fimages%2Fmenucharacters%2Fparents-christmas.jsonR2i127R3R4R5R526R6tgoR0y60:assets%2Fshared%2Fimages%2Fmenucharacters%2Fpico-player.jsonR2i152R3R4R5R527R6tgoR0y59:assets%2Fshared%2Fimages%2Fmenucharacters%2Fpico-player.pngR2i374397R3R22R5R528R6tgoR0y59:assets%2Fshared%2Fimages%2Fmenucharacters%2Fpico-player.xmlR2i5813R3R4R5R529R6tgoR0y53:assets%2Fshared%2Fimages%2Fmenucharacters%2Fpico.jsonR2i121R3R4R5R530R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2Fsenpai.jsonR2i125R3R4R5R531R6tgoR0y55:assets%2Fshared%2Fimages%2Fmenucharacters%2Fspooky.jsonR2i134R3R4R5R532R6tgoR0y56:assets%2Fshared%2Fimages%2Fmenucharacters%2Ftankman.jsonR2i126R3R4R5R533R6tgoR0y51:assets%2Fshared%2Fimages%2Fstorymenu%2Ftutorial.pngR2i7056R3R22R5R534R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek1.pngR2i6261R3R22R5R535R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek2.pngR2i6517R3R22R5R536R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek3.pngR2i7148R3R22R5R537R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek4.pngR2i6262R3R22R5R538R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek5.pngR2i6440R3R22R5R539R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek6.pngR2i8979R3R22R5R540R6tgoR0y48:assets%2Fshared%2Fimages%2Fstorymenu%2Fweek7.pngR2i7349R3R22R5R541R6tgoR0y51:assets%2Fshared%2Fimages%2Fstorymenu%2Fweekend1.pngR2i58118R3R22R5R542R6tgoR0y36:assets%2Fshared%2Fstages%2Flimo.jsonR2i555R3R4R5R543R6tgoR0y36:assets%2Fshared%2Fstages%2Fmall.jsonR2i645R3R4R5R544R6tgoR0y40:assets%2Fshared%2Fstages%2FmallEvil.jsonR2i502R3R4R5R545R6tgoR0y38:assets%2Fshared%2Fstages%2Fphilly.jsonR2i542R3R4R5R546R6tgoR0y44:assets%2Fshared%2Fstages%2FphillyBlazin.jsonR2i618R3R4R5R547R6tgoR0y45:assets%2Fshared%2Fstages%2FphillyStreets.jsonR2i1068R3R4R5R548R6tgoR0y38:assets%2Fshared%2Fstages%2Fschool.jsonR2i604R3R4R5R549R6tgoR0y42:assets%2Fshared%2Fstages%2FschoolEvil.jsonR2i505R3R4R5R550R6tgoR0y38:assets%2Fshared%2Fstages%2Fspooky.jsonR2i431R3R4R5R551R6tgoR0y37:assets%2Fshared%2Fstages%2Fstage.jsonR2i474R3R4R5R552R6tgoR0y36:assets%2Fshared%2Fstages%2Ftank.jsonR2i634R3R4R5R553R6tgoR0y39:assets%2Fshared%2Fweeks%2Ftutorial.jsonR2i274R3R4R5R554R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek1.jsonR2i369R3R4R5R555R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek2.jsonR2i371R3R4R5R556R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek3.jsonR2i356R3R4R5R557R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek4.jsonR2i369R3R4R5R558R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek5.jsonR2i397R3R4R5R559R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek6.jsonR2i408R3R4R5R560R6tgoR0y36:assets%2Fshared%2Fweeks%2Fweek7.jsonR2i491R3R4R5R561R6tgoR0y39:assets%2Fshared%2Fweeks%2Fweekend1.jsonR2i463R3R4R5R562R6tgoR2i4281003R3R199R5y35:assets%2Fsongs%2Fblammed%2FInst.mp3R201aR563hR6tgoR2i4281003R3R199R5y46:assets%2Fsongs%2Fblammed%2FVoices-Opponent.mp3R201aR564hR6tgoR2i4281003R3R199R5y44:assets%2Fsongs%2Fblammed%2FVoices-Player.mp3R201aR565hR6tgoR2i1959854R3R199R5y35:assets%2Fsongs%2Fbopeebo%2FInst.mp3R201aR566hR6tgoR2i1959854R3R199R5y46:assets%2Fsongs%2Fbopeebo%2FVoices-Opponent.mp3R201aR567hR6tgoR2i1959854R3R199R5y44:assets%2Fsongs%2Fbopeebo%2FVoices-Player.mp3R201aR568hR6tgoR2i2709046R3R199R5y33:assets%2Fsongs%2Fcocoa%2FInst.mp3R201aR569hR6tgoR2i2709046R3R199R5y44:assets%2Fsongs%2Fcocoa%2FVoices-Opponent.mp3R201aR570hR6tgoR2i2709046R3R199R5y42:assets%2Fsongs%2Fcocoa%2FVoices-Player.mp3R201aR571hR6tgoR2i2081480R3R199R5y38:assets%2Fsongs%2Fdad-battle%2FInst.mp3R201aR572hR6tgoR2i2081480R3R199R5y49:assets%2Fsongs%2Fdad-battle%2FVoices-Opponent.mp3R201aR573hR6tgoR2i2081480R3R199R5y47:assets%2Fsongs%2Fdad-battle%2FVoices-Player.mp3R201aR574hR6tgoR2i2286489R3R199R5y34:assets%2Fsongs%2Feggnog%2FInst.mp3R201aR575hR6tgoR2i2286489R3R199R5y45:assets%2Fsongs%2Feggnog%2FVoices-Opponent.mp3R201aR576hR6tgoR2i2286489R3R199R5y43:assets%2Fsongs%2Feggnog%2FVoices-Player.mp3R201aR577hR6tgoR2i1970512R3R199R5y33:assets%2Fsongs%2Ffresh%2FInst.mp3R201aR578hR6tgoR2i1969885R3R199R5y44:assets%2Fsongs%2Ffresh%2FVoices-Opponent.mp3R201aR579hR6tgoR2i1969885R3R199R5y42:assets%2Fsongs%2Ffresh%2FVoices-Player.mp3R201aR580hR6tgoR2i3372974R3R199R5y32:assets%2Fsongs%2Fguns%2FInst.mp3R201aR581hR6tgoR2i3372974R3R199R5y43:assets%2Fsongs%2Fguns%2FVoices-Opponent.mp3R201aR582hR6tgoR2i3372974R3R199R5y41:assets%2Fsongs%2Fguns%2FVoices-Player.mp3R201aR583hR6tgoR2i4228758R3R199R5y32:assets%2Fsongs%2Fhigh%2FInst.mp3R201aR584hR6tgoR2i4228758R3R199R5y43:assets%2Fsongs%2Fhigh%2FVoices-Opponent.mp3R201aR585hR6tgoR2i4228758R3R199R5y41:assets%2Fsongs%2Fhigh%2FVoices-Player.mp3R201aR586hR6tgoR2i4991533R3R199R5y32:assets%2Fsongs%2Fmilf%2FInst.mp3R201aR587hR6tgoR2i4991533R3R199R5y43:assets%2Fsongs%2Fmilf%2FVoices-Opponent.mp3R201aR588hR6tgoR2i4991533R3R199R5y41:assets%2Fsongs%2Fmilf%2FVoices-Player.mp3R201aR589hR6tgoR2i2843628R3R199R5y35:assets%2Fsongs%2Fmonster%2FInst.mp3R201aR590hR6tgoR2i2843628R3R199R5y46:assets%2Fsongs%2Fmonster%2FVoices-Opponent.mp3R201aR591hR6tgoR2i2843628R3R199R5y44:assets%2Fsongs%2Fmonster%2FVoices-Player.mp3R201aR592hR6tgoR2i3269280R3R199R5y39:assets%2Fsongs%2Fphilly-nice%2FInst.mp3R201aR593hR6tgoR2i2857392R3R199R5y50:assets%2Fsongs%2Fphilly-nice%2FVoices-Opponent.mp3R201aR594hR6tgoR2i2845200R3R199R5y48:assets%2Fsongs%2Fphilly-nice%2FVoices-Player.mp3R201aR595hR6tgoR2i3397019R3R199R5y32:assets%2Fsongs%2Fpico%2FInst.mp3R201aR596hR6tgoR2i3397019R3R199R5y43:assets%2Fsongs%2Fpico%2FVoices-Opponent.mp3R201aR597hR6tgoR2i3397019R3R199R5y41:assets%2Fsongs%2Fpico%2FVoices-Player.mp3R201aR598hR6tgoR2i2209376R3R199R5y33:assets%2Fsongs%2Froses%2FInst.mp3R201aR599hR6tgoR2i2209376R3R199R5y44:assets%2Fsongs%2Froses%2FVoices-Opponent.mp3R201aR600hR6tgoR2i2209376R3R199R5y42:assets%2Fsongs%2Froses%2FVoices-Player.mp3R201aR601hR6tgoR2i3845280R3R199R5y41:assets%2Fsongs%2Fsatin-panties%2FInst.mp3R201aR602hR6tgoR2i3845280R3R199R5y52:assets%2Fsongs%2Fsatin-panties%2FVoices-Opponent.mp3R201aR603hR6tgoR2i3845280R3R199R5y50:assets%2Fsongs%2Fsatin-panties%2FVoices-Player.mp3R201aR604hR6tgoR2i2561715R3R199R5y34:assets%2Fsongs%2Fsenpai%2FInst.mp3R201aR605hR6tgoR2i2561715R3R199R5y45:assets%2Fsongs%2Fsenpai%2FVoices-Opponent.mp3R201aR606hR6tgoR2i2561715R3R199R5y43:assets%2Fsongs%2Fsenpai%2FVoices-Player.mp3R201aR607hR6tgoR2i3553754R3R199R5y33:assets%2Fsongs%2Fsouth%2FInst.mp3R201aR608hR6tgoR2i3553754R3R199R5y44:assets%2Fsongs%2Fsouth%2FVoices-Opponent.mp3R201aR609hR6tgoR2i3553754R3R199R5y42:assets%2Fsongs%2Fsouth%2FVoices-Player.mp3R201aR610hR6tgoR2i2381784R3R199R5y36:assets%2Fsongs%2Fspookeez%2FInst.mp3R201aR611hR6tgoR2i2381784R3R199R5y47:assets%2Fsongs%2Fspookeez%2FVoices-Opponent.mp3R201aR612hR6tgoR2i2382411R3R199R5y45:assets%2Fsongs%2Fspookeez%2FVoices-Player.mp3R201aR613hR6tgoR2i2978630R3R199R5y34:assets%2Fsongs%2Fstress%2FInst.mp3R201aR614hR6tgoR2i2978630R3R199R5y45:assets%2Fsongs%2Fstress%2FVoices-Opponent.mp3R201aR615hR6tgoR2i2978630R3R199R5y43:assets%2Fsongs%2Fstress%2FVoices-Player.mp3R201aR616hR6tgoR2i2459524R3R199R5y32:assets%2Fsongs%2Ftest%2FInst.mp3R201aR617hR6tgoR2i2536011R3R199R5y43:assets%2Fsongs%2Ftest%2FVoices-Opponent.mp3R201aR618hR6tgoR2i2536011R3R199R5y41:assets%2Fsongs%2Ftest%2FVoices-Player.mp3R201aR619hR6tgoR2i2487737R3R199R5y34:assets%2Fsongs%2Fthorns%2FInst.mp3R201aR620hR6tgoR2i2487737R3R199R5y45:assets%2Fsongs%2Fthorns%2FVoices-Opponent.mp3R201aR621hR6tgoR2i2487737R3R199R5y43:assets%2Fsongs%2Fthorns%2FVoices-Player.mp3R201aR622hR6tgoR2i1614411R3R199R5y36:assets%2Fsongs%2Ftutorial%2FInst.mp3R201aR623hR6tgoR2i1614411R3R199R5y47:assets%2Fsongs%2Ftutorial%2FVoices-Opponent.mp3R201aR624hR6tgoR2i1614411R3R199R5y45:assets%2Fsongs%2Ftutorial%2FVoices-Player.mp3R201aR625hR6tgoR2i2080226R3R199R5y31:assets%2Fsongs%2Fugh%2FInst.mp3R201aR626hR6tgoR2i2080226R3R199R5y42:assets%2Fsongs%2Fugh%2FVoices-Opponent.mp3R201aR627hR6tgoR2i2080226R3R199R5y40:assets%2Fsongs%2Fugh%2FVoices-Player.mp3R201aR628hR6tgoR2i3189280R3R199R5y45:assets%2Fsongs%2Fwinter-horrorland%2FInst.mp3R201aR629hR6tgoR2i3189280R3R199R5y56:assets%2Fsongs%2Fwinter-horrorland%2FVoices-Opponent.mp3R201aR630hR6tgoR2i3189280R3R199R5y54:assets%2Fsongs%2Fwinter-horrorland%2FVoices-Player.mp3R201aR631hR6tgoR0y34:assets%2Fvideos%2F2hotCutscene.mp4R2i2658115R3y6:BINARYR5R632R6tgoR0y36:assets%2Fvideos%2FblazinCutscene.mp4R2i10395445R3R633R5R634R6tgoR0y37:assets%2Fvideos%2FdarnellCutscene.mp4R2i14683508R3R633R5R635R6tgoR0y35:assets%2Fweek1%2Fimages%2Fsmoke.pngR2i3731R3R22R5R636R6tgoR0y39:assets%2Fweek1%2Fimages%2Fspotlight.pngR2i12487R3R22R5R637R6tgoR0y39:assets%2Fweek1%2Fimages%2Fstageback.pngR2i14010R3R22R5R638R6tgoR0y43:assets%2Fweek1%2Fimages%2Fstagecurtains.pngR2i123947R3R22R5R639R6tgoR0y40:assets%2Fweek1%2Fimages%2Fstagefront.pngR2i120269R3R22R5R640R6tgoR0y41:assets%2Fweek1%2Fimages%2Fstage_light.pngR2i7324R3R22R5R641R6tgoR0y42:assets%2Fweek2%2Fimages%2Fhalloween_bg.pngR2i4510676R3R22R5R642R6tgoR0y42:assets%2Fweek2%2Fimages%2Fhalloween_bg.xmlR2i3663R3R4R5R643R6tgoR0y46:assets%2Fweek2%2Fimages%2Fhalloween_bg_low.pngR2i204889R3R22R5R644R6tgoR2i137925R3R199R5y39:assets%2Fweek2%2Fsounds%2Fthunder_1.mp3R201aR645hR6tgoR2i274807R3R199R5y39:assets%2Fweek2%2Fsounds%2Fthunder_2.mp3R201aR646hR6tgoR0y37:assets%2Fweek2%2Fweek2_stuff_here.txtR2zR3R4R5R647R6tgoR0y50:assets%2Fweek3%2Fimages%2Fphilly%2FbehindTrain.pngR2i21150R3R22R5R648R6tgoR0y43:assets%2Fweek3%2Fimages%2Fphilly%2Fcity.pngR2i121010R3R22R5R649R6tgoR0y47:assets%2Fweek3%2Fimages%2Fphilly%2Fgradient.pngR2i2947R3R22R5R650R6tgoR0y47:assets%2Fweek3%2Fimages%2Fphilly%2Fparticle.pngR2i485R3R22R5R651R6tgoR0y42:assets%2Fweek3%2Fimages%2Fphilly%2Fsky.pngR2i322855R3R22R5R652R6tgoR0y45:assets%2Fweek3%2Fimages%2Fphilly%2Fstreet.pngR2i99609R3R22R5R653R6tgoR0y44:assets%2Fweek3%2Fimages%2Fphilly%2Ftrain.pngR2i155906R3R22R5R654R6tgoR0y45:assets%2Fweek3%2Fimages%2Fphilly%2Fwindow.pngR2i9864R3R22R5R655R6tgoR2i277982R3R199R5y42:assets%2Fweek3%2Fsounds%2Ftrain_passes.mp3R201aR656hR6tgoR0y37:assets%2Fweek3%2Fweek3_stuff_here.txtR2zR3R4R5R657R6tgoR0y52:assets%2Fweek4%2Fimages%2Fgore%2FcoldHeartKiller.pngR2i44166R3R22R5R658R6tgoR0y46:assets%2Fweek4%2Fimages%2Fgore%2FmetalPole.pngR2i2012R3R22R5R659R6tgoR0y44:assets%2Fweek4%2Fimages%2Fgore%2Fnoooooo.pngR2i321314R3R22R5R660R6tgoR0y44:assets%2Fweek4%2Fimages%2Fgore%2Fnoooooo.xmlR2i14459R3R4R5R661R6tgoR0y48:assets%2Fweek4%2Fimages%2Fgore%2FstupidBlood.pngR2i13068R3R22R5R662R6tgoR0y48:assets%2Fweek4%2Fimages%2Fgore%2FstupidBlood.xmlR2i1721R3R4R5R663R6tgoR0y43:assets%2Fweek4%2Fimages%2Flimo%2FbgLimo.pngR2i672307R3R22R5R664R6tgoR0y43:assets%2Fweek4%2Fimages%2Flimo%2FbgLimo.xmlR2i794R3R4R5R665R6tgoR0y41:assets%2Fweek4%2Fimages%2Flimo%2Fdumb.pngR2i14553R3R22R5R666R6tgoR0y47:assets%2Fweek4%2Fimages%2Flimo%2FfastCarLol.pngR2i275162R3R22R5R667R6tgoR0y47:assets%2Fweek4%2Fimages%2Flimo%2FlimoDancer.pngR2i425744R3R22R5R668R6tgoR0y47:assets%2Fweek4%2Fimages%2Flimo%2FlimoDancer.xmlR2i4675R3R4R5R669R6tgoR0y46:assets%2Fweek4%2Fimages%2Flimo%2FlimoDrive.pngR2i478779R3R22R5R670R6tgoR0y46:assets%2Fweek4%2Fimages%2Flimo%2FlimoDrive.xmlR2i515R3R4R5R671R6tgoR0y47:assets%2Fweek4%2Fimages%2Flimo%2FlimoSunset.pngR2i883903R3R22R5R672R6tgoR2i54621R3R199R5y38:assets%2Fweek4%2Fsounds%2FcarPass0.mp3R201aR673hR6tgoR2i60069R3R199R5y38:assets%2Fweek4%2Fsounds%2FcarPass1.mp3R201aR674hR6tgoR2i32391R3R199R5y41:assets%2Fweek4%2Fsounds%2Fdancerdeath.mp3R201aR675hR6tgoR0y37:assets%2Fweek4%2Fweek4_stuff_here.txtR2zR3R4R5R676R6tgoR0y53:assets%2Fweek5%2Fimages%2Fchristmas%2FbgEscalator.pngR2i48056R3R22R5R677R6tgoR0y49:assets%2Fweek5%2Fimages%2Fchristmas%2FbgWalls.pngR2i745828R3R22R5R678R6tgoR0y51:assets%2Fweek5%2Fimages%2Fchristmas%2FbottomBop.pngR2i1100222R3R22R5R679R6tgoR0y51:assets%2Fweek5%2Fimages%2Fchristmas%2FbottomBop.xmlR2i4591R3R4R5R680R6tgoR0y55:assets%2Fweek5%2Fimages%2Fchristmas%2FchristmasTree.pngR2i68125R3R22R5R681R6tgoR0y48:assets%2Fweek5%2Fimages%2Fchristmas%2FevilBG.pngR2i1008836R3R22R5R682R6tgoR0y50:assets%2Fweek5%2Fimages%2Fchristmas%2FevilSnow.pngR2i8348R3R22R5R683R6tgoR0y50:assets%2Fweek5%2Fimages%2Fchristmas%2FevilTree.pngR2i113550R3R22R5R684R6tgoR0y48:assets%2Fweek5%2Fimages%2Fchristmas%2FfgSnow.pngR2i4286R3R22R5R685R6tgoR0y47:assets%2Fweek5%2Fimages%2Fchristmas%2Fsanta.pngR2i648109R3R22R5R686R6tgoR0y47:assets%2Fweek5%2Fimages%2Fchristmas%2Fsanta.xmlR2i2232R3R4R5R687R6tgoR0y50:assets%2Fweek5%2Fimages%2Fchristmas%2FupperBop.pngR2i176250R3R22R5R688R6tgoR0y50:assets%2Fweek5%2Fimages%2Fchristmas%2FupperBop.xmlR2i2046R3R4R5R689R6tgoR2i53174R3R199R5y45:assets%2Fweek5%2Fsounds%2FLights_Shut_off.mp3R201aR690hR6tgoR2i88390R3R199R5y44:assets%2Fweek5%2Fsounds%2FLights_Turn_On.mp3R201aR691hR6tgoR0y37:assets%2Fweek5%2Fweek5_stuff_here.txtR2zR3R4R5R692R6tgoR0y55:assets%2Fweek6%2Fimages%2Fweeb%2FanimatedEvilSchool.pngR2i86440R3R22R5R693R6tgoR0y55:assets%2Fweek6%2Fimages%2Fweeb%2FanimatedEvilSchool.xmlR2i3887R3R4R5R694R6tgoR0y59:assets%2Fweek6%2Fimages%2Fweeb%2FanimatedEvilSchool_low.pngR2i6780R3R22R5R695R6tgoR0y47:assets%2Fweek6%2Fimages%2Fweeb%2FbfPortrait.pngR2i3156R3R22R5R696R6tgoR0y47:assets%2Fweek6%2Fimages%2Fweeb%2FbfPortrait.xmlR2i1126R3R4R5R697R6tgoR0y45:assets%2Fweek6%2Fimages%2Fweeb%2FbgFreaks.pngR2i30914R3R22R5R698R6tgoR0y45:assets%2Fweek6%2Fimages%2Fweeb%2FbgFreaks.xmlR2i5211R3R4R5R699R6tgoR0y45:assets%2Fweek6%2Fimages%2Fweeb%2FbgGhouls.pngR2i19521R3R22R5R700R6tgoR0y45:assets%2Fweek6%2Fimages%2Fweeb%2FbgGhouls.xmlR2i1985R3R4R5R701R6tgoR0y49:assets%2Fweek6%2Fimages%2Fweeb%2FevilSchoolBG.pngR2i4774R3R22R5R702R6tgoR0y49:assets%2Fweek6%2Fimages%2Fweeb%2FevilSchoolFG.pngR2i1774R3R22R5R703R6tgoR0y43:assets%2Fweek6%2Fimages%2Fweeb%2Fpetals.pngR2i1617R3R22R5R704R6tgoR0y43:assets%2Fweek6%2Fimages%2Fweeb%2Fpetals.xmlR2i4557R3R4R5R705R6tgoR0y63:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2FdialogueBox-evil.pngR2i209R3R22R5R706R6tgoR0y63:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2FdialogueBox-evil.xmlR2i1385R3R4R5R707R6tgoR0y64:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2FdialogueBox-pixel.pngR2i2618R3R22R5R708R6tgoR0y64:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2FdialogueBox-pixel.xmlR2i680R3R4R5R709R6tgoR0y68:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2FdialogueBox-senpaiMad.pngR2i8391R3R22R5R710R6tgoR0y68:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2FdialogueBox-senpaiMad.xmlR2i1050R3R4R5R711R6tgoR0y59:assets%2Fweek6%2Fimages%2Fweeb%2FpixelUI%2Fhand_textbox.pngR2i171R3R22R5R712R6tgoR0y48:assets%2Fweek6%2Fimages%2Fweeb%2FsenpaiCrazy.pngR2i5503R3R22R5R713R6tgoR0y48:assets%2Fweek6%2Fimages%2Fweeb%2FsenpaiCrazy.xmlR2i19805R3R4R5R714R6tgoR0y51:assets%2Fweek6%2Fimages%2Fweeb%2FsenpaiPortrait.pngR2i4656R3R22R5R715R6tgoR0y51:assets%2Fweek6%2Fimages%2Fweeb%2FsenpaiPortrait.xmlR2i1103R3R4R5R716R6tgoR0y54:assets%2Fweek6%2Fimages%2Fweeb%2FspiritFaceForward.pngR2i787R3R22R5R717R6tgoR0y47:assets%2Fweek6%2Fimages%2Fweeb%2FweebSchool.pngR2i4034R3R22R5R718R6tgoR0y44:assets%2Fweek6%2Fimages%2Fweeb%2FweebSky.pngR2i2714R3R22R5R719R6tgoR0y47:assets%2Fweek6%2Fimages%2Fweeb%2FweebStreet.pngR2i3885R3R22R5R720R6tgoR0y46:assets%2Fweek6%2Fimages%2Fweeb%2FweebTrees.pngR2i119590R3R22R5R721R6tgoR0y46:assets%2Fweek6%2Fimages%2Fweeb%2FweebTrees.txtR2i529R3R4R5R722R6tgoR0y50:assets%2Fweek6%2Fimages%2Fweeb%2FweebTreesBack.pngR2i663R3R22R5R723R6tgoR2i3072000R3R199R5y43:assets%2Fweek6%2Fmusic%2FgameOver-pixel.mp3R201aR724hR6tgoR2i192000R3R199R5y46:assets%2Fweek6%2Fmusic%2FgameOverEnd-pixel.mp3R201aR725hR6tgoR2i1181760R3R199R5y37:assets%2Fweek6%2Fmusic%2FLunchbox.mp3R201aR726hR6tgoR2i275451R3R199R5y42:assets%2Fweek6%2Fmusic%2FLunchboxScary.mp3R201aR727hR6tgoR2i74226R3R199R5y48:assets%2Fweek6%2Fsounds%2Ffnf_loss_sfx-pixel.mp3R201aR728hR6tgoR2i1793R3R199R5y39:assets%2Fweek6%2Fsounds%2FpixelText.mp3R201aR729hR6tgoR2i159129R3R199R5y41:assets%2Fweek6%2Fsounds%2FSenpai_Dies.mp3R201aR730hR6tgoR0y37:assets%2Fweek6%2Fweek6_stuff_here.txtR2zR3R4R5R731R6tgoR0y66:assets%2Fweek7%2Fimages%2Fcutscenes%2FpicoAppears%2FAnimation.jsonR2i760156R3R4R5R732R6tgoR0y67:assets%2Fweek7%2Fimages%2Fcutscenes%2FpicoAppears%2Fspritemap1.jsonR2i11555R3R4R5R733R6tgoR0y66:assets%2Fweek7%2Fimages%2Fcutscenes%2FpicoAppears%2Fspritemap1.pngR2i1077475R3R22R5R734R6tgoR0y62:assets%2Fweek7%2Fimages%2Fcutscenes%2Ftankman%2FAnimation.jsonR2i1624755R3R4R5R735R6tgoR0y63:assets%2Fweek7%2Fimages%2Fcutscenes%2Ftankman%2Fspritemap1.jsonR2i8464R3R4R5R736R6tgoR0y62:assets%2Fweek7%2Fimages%2Fcutscenes%2Ftankman%2Fspritemap1.pngR2i358295R3R22R5R737R6tgoR0y39:assets%2Fweek7%2Fimages%2FsmokeLeft.pngR2i2219041R3R22R5R738R6tgoR0y39:assets%2Fweek7%2Fimages%2FsmokeLeft.xmlR2i7524R3R4R5R739R6tgoR0y40:assets%2Fweek7%2Fimages%2FsmokeRight.pngR2i2455333R3R22R5R740R6tgoR0y40:assets%2Fweek7%2Fimages%2FsmokeRight.xmlR2i7387R3R4R5R741R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank0.pngR2i98968R3R22R5R742R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank0.xmlR2i2394R3R4R5R743R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank1.pngR2i43348R3R22R5R744R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank1.xmlR2i2412R3R4R5R745R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank2.pngR2i67215R3R22R5R746R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank2.xmlR2i2324R3R4R5R747R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank3.pngR2i50850R3R22R5R748R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank3.xmlR2i2414R3R4R5R749R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank4.pngR2i118261R3R22R5R750R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank4.xmlR2i2382R3R4R5R751R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank5.pngR2i98727R3R22R5R752R6tgoR0y35:assets%2Fweek7%2Fimages%2Ftank5.xmlR2i2398R3R4R5R753R6tgoR0y43:assets%2Fweek7%2Fimages%2FtankBuildings.pngR2i50121R3R22R5R754R6tgoR0y40:assets%2Fweek7%2Fimages%2FtankClouds.pngR2i4178R3R22R5R755R6tgoR0y40:assets%2Fweek7%2Fimages%2FtankGround.pngR2i125274R3R22R5R756R6tgoR0y44:assets%2Fweek7%2Fimages%2FtankmanKilled1.pngR2i492132R3R22R5R757R6tgoR0y44:assets%2Fweek7%2Fimages%2FtankmanKilled1.xmlR2i7724R3R4R5R758R6tgoR0y43:assets%2Fweek7%2Fimages%2FtankMountains.pngR2i69674R3R22R5R759R6tgoR0y41:assets%2Fweek7%2Fimages%2FtankRolling.pngR2i109393R3R22R5R760R6tgoR0y41:assets%2Fweek7%2Fimages%2FtankRolling.xmlR2i613R3R4R5R761R6tgoR0y39:assets%2Fweek7%2Fimages%2FtankRuins.pngR2i414815R3R22R5R762R6tgoR0y37:assets%2Fweek7%2Fimages%2FtankSky.pngR2i25636R3R22R5R763R6tgoR0y44:assets%2Fweek7%2Fimages%2FtankWatchtower.pngR2i158527R3R22R5R764R6tgoR0y44:assets%2Fweek7%2Fimages%2FtankWatchtower.xmlR2i2460R3R4R5R765R6tgoR2i872640R3R199R5y37:assets%2Fweek7%2Fmusic%2FDISTORTO.mp3R201aR766hR6tgoR2i7656R3R199R5y36:assets%2Fweek7%2Fsounds%2FbfBeep.mp3R201aR767hR6tgoR2i66857R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-1.mp3R201aR768hR6tgoR2i50955R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-10.mp3R201aR769hR6tgoR2i72883R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-11.mp3R201aR770hR6tgoR2i40694R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-12.mp3R201aR771hR6tgoR2i106166R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-13.mp3R201aR772hR6tgoR2i56160R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-14.mp3R201aR773hR6tgoR2i65167R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-15.mp3R201aR774hR6tgoR2i26593R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-16.mp3R201aR775hR6tgoR2i59393R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-17.mp3R201aR776hR6tgoR2i95792R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-18.mp3R201aR777hR6tgoR2i68103R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-19.mp3R201aR778hR6tgoR2i69808R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-2.mp3R201aR779hR6tgoR2i80735R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-20.mp3R201aR780hR6tgoR2i41325R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-21.mp3R201aR781hR6tgoR2i62399R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-22.mp3R201aR782hR6tgoR2i51085R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-23.mp3R201aR783hR6tgoR2i55041R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-24.mp3R201aR784hR6tgoR2i105326R3R199R5y60:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-25.mp3R201aR785hR6tgoR2i68342R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-3.mp3R201aR786hR6tgoR2i74720R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-4.mp3R201aR787hR6tgoR2i51076R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-5.mp3R201aR788hR6tgoR2i50948R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-6.mp3R201aR789hR6tgoR2i60858R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-7.mp3R201aR790hR6tgoR2i53059R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-8.mp3R201aR791hR6tgoR2i47561R3R199R5y59:assets%2Fweek7%2Fsounds%2FjeffGameover%2FjeffGameover-9.mp3R201aR792hR6tgoR2i83715R3R199R5y37:assets%2Fweek7%2Fsounds%2FkillYou.mp3R201aR793hR6tgoR2i859992R3R199R5y44:assets%2Fweek7%2Fsounds%2FstressCutscene.mp3R201aR794hR6tgoR2i148322R3R199R5y39:assets%2Fweek7%2Fsounds%2FtankSong2.mp3R201aR795hR6tgoR2i40176R3R199R5y42:assets%2Fweek7%2Fsounds%2FwellWellWell.mp3R201aR796hR6tgoR0y63:assets%2Fweekend1%2Fimages%2Fabot%2FabotSystem%2FAnimation.jsonR2i43821R3R4R5R797R6tgoR0y64:assets%2Fweekend1%2Fimages%2Fabot%2FabotSystem%2Fspritemap1.jsonR2i974R3R4R5R798R6tgoR0y63:assets%2Fweekend1%2Fimages%2Fabot%2FabotSystem%2Fspritemap1.pngR2i72637R3R22R5R799R6tgoR0y47:assets%2Fweekend1%2Fimages%2Fabot%2FaBotViz.pngR2i16006R3R22R5R800R6tgoR0y47:assets%2Fweekend1%2Fimages%2Fabot%2FaBotViz.xmlR2i5133R3R4R5R801R6tgoR0y48:assets%2Fweekend1%2Fimages%2Fabot%2FstereoBG.pngR2i1638R3R22R5R802R6tgoR0y63:assets%2Fweekend1%2Fimages%2Fabot%2FsystemEyes%2FAnimation.jsonR2i7360R3R4R5R803R6tgoR0y64:assets%2Fweekend1%2Fimages%2Fabot%2FsystemEyes%2Fspritemap1.jsonR2i306R3R4R5R804R6tgoR0y63:assets%2Fweekend1%2Fimages%2Fabot%2FsystemEyes%2Fspritemap1.pngR2i627R3R22R5R805R6tgoR0y50:assets%2Fweekend1%2Fimages%2FCanImpactParticle.pngR2i8841R3R22R5R806R6tgoR0y50:assets%2Fweekend1%2Fimages%2FCanImpactParticle.xmlR2i725R3R4R5R807R6tgoR0y46:assets%2Fweekend1%2Fimages%2FNeneKnifeToss.pngR2i131265R3R22R5R808R6tgoR0y46:assets%2Fweekend1%2Fimages%2FNeneKnifeToss.xmlR2i2629R3R4R5R809R6tgoR0y57:assets%2Fweekend1%2Fimages%2FphillyBlazin%2Flightning.pngR2i179983R3R22R5R810R6tgoR0y57:assets%2Fweekend1%2Fimages%2FphillyBlazin%2Flightning.xmlR2i4265R3R4R5R811R6tgoR0y55:assets%2Fweekend1%2Fimages%2FphillyBlazin%2FskyBlur.pngR2i286364R3R22R5R812R6tgoR0y58:assets%2Fweekend1%2Fimages%2FphillyBlazin%2FstreetBlur.pngR2i333464R3R22R5R813R6tgoR0y59:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyCars.pngR2i13159R3R22R5R814R6tgoR0y59:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyCars.xmlR2i382R3R4R5R815R6tgoR0y67:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyConstruction.pngR2i15681R3R22R5R816R6tgoR0y65:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyForeground.pngR2i495009R3R22R5R817R6tgoR0y69:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyForegroundCity.pngR2i4066R3R22R5R818R6tgoR0y62:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyHighway.pngR2i27137R3R22R5R819R6tgoR0y68:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyHighwayLights.pngR2i6979R3R22R5R820R6tgoR0y77:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyHighwayLights_lightmap.pngR2i39615R3R22R5R821R6tgoR0y61:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillySkybox.pngR2i604767R3R22R5R822R6tgoR0y62:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillySkyline.pngR2i14240R3R22R5R823R6tgoR0y59:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillySmog.pngR2i1650154R3R22R5R824R6tgoR0y62:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyTraffic.pngR2i255470R3R22R5R825R6tgoR0y62:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyTraffic.xmlR2i10943R3R4R5R826R6tgoR0y71:assets%2Fweekend1%2Fimages%2FphillyStreets%2FphillyTraffic_lightmap.pngR2i19824R3R22R5R827R6tgoR0y55:assets%2Fweekend1%2Fimages%2FphillyStreets%2Fpuddle.pngR2i79661R3R22R5R828R6tgoR0y43:assets%2Fweekend1%2Fimages%2FPicoBullet.pngR2i11047R3R22R5R829R6tgoR0y43:assets%2Fweekend1%2Fimages%2FPicoBullet.xmlR2i6986R3R4R5R830R6tgoR0y49:assets%2Fweekend1%2Fimages%2FPico_Death_Retry.pngR2i815433R3R22R5R831R6tgoR0y49:assets%2Fweekend1%2Fimages%2FPico_Death_Retry.xmlR2i6356R3R4R5R832R6tgoR0y59:assets%2Fweekend1%2Fimages%2FspraycanAtlas%2FAnimation.jsonR2i34470R3R4R5R833R6tgoR0y60:assets%2Fweekend1%2Fimages%2FspraycanAtlas%2Fspritemap1.jsonR2i3133R3R4R5R834R6tgoR0y59:assets%2Fweekend1%2Fimages%2FspraycanAtlas%2Fspritemap1.pngR2i626508R3R22R5R835R6tgoR0y45:assets%2Fweekend1%2Fimages%2FSpraycanPile.pngR2i17483R3R22R5R836R6tgoR0y54:assets%2Fweekend1%2Fimages%2FspraypaintExplosionEZ.pngR2i386207R3R22R5R837R6tgoR0y54:assets%2Fweekend1%2Fimages%2FspraypaintExplosionEZ.xmlR2i2265R3R4R5R838R6tgoR0y21:do%20NOT%20readme.txtR2i4326R3R4R5R839R6tgoR2i8220R3R199R5y26:flixel%2Fsounds%2Fbeep.mp3R201aR840y26:flixel%2Fsounds%2Fbeep.ogghR6tgoR2i39706R3R199R5y28:flixel%2Fsounds%2Fflixel.mp3R201aR842y28:flixel%2Fsounds%2Fflixel.ogghR6tgoR2i6840R3y5:SOUNDR5R841R201aR840R841hgoR2i33629R3R844R5R843R201aR842R843hgoR2i15744R3R7R8y35:__ASSET__flixel_fonts_nokiafc22_ttfR5y30:flixel%2Ffonts%2Fnokiafc22.ttfR6tgoR2i29724R3R7R8y36:__ASSET__flixel_fonts_monsterrat_ttfR5y31:flixel%2Ffonts%2Fmonsterrat.ttfR6tgoR0y33:flixel%2Fimages%2Fui%2Fbutton.pngR2i248R3R22R5R849R6tgoR0y36:flixel%2Fimages%2Flogo%2Fdefault.pngR2i505R3R22R5R850R6tgoR0y42:flixel%2Fimages%2Ftransitions%2Fcircle.pngR2i824R3R22R5R851R6tgoR0y53:flixel%2Fimages%2Ftransitions%2Fdiagonal_gradient.pngR2i3812R3R22R5R852R6tgoR0y43:flixel%2Fimages%2Ftransitions%2Fdiamond.pngR2i788R3R22R5R853R6tgoR0y42:flixel%2Fimages%2Ftransitions%2Fsquare.pngR2i383R3R22R5R854R6tgoR0y31:flxanimate%2Fimages%2Fpivot.pngR2i300R3R22R5R855R6tgoR0y35:flxanimate%2Fimages%2Findicator.pngR2i129R3R22R5R856R6tgh\",\"rootPath\":null,\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
 	var manifest = lime_utils_AssetManifest.parse(data,ManifestResources.rootPath);
 	var library = lime_utils_AssetLibrary.fromManifest(manifest);
 	lime_utils_Assets.registerLibrary("default",library);
@@ -6860,12 +7053,22 @@ backend_Achievements.__name__ = "backend.Achievements";
 backend_Achievements.__properties__ = {get_showingPopups:"get_showingPopups"};
 backend_Achievements.init = function() {
 	backend_Achievements.createAchievement("friday_night_play",{ name : "Freaky on a Friday Night", description : "Play on a Friday... Night.", hidden : true});
+	backend_Achievements.createAchievement("week1_nomiss",{ name : "She Calls Me Daddy Too", description : "Beat Week 1 on Hard with no Misses."});
+	backend_Achievements.createAchievement("week2_nomiss",{ name : "No More Tricks", description : "Beat Week 2 on Hard with no Misses."});
+	backend_Achievements.createAchievement("week3_nomiss",{ name : "Call Me The Hitman", description : "Beat Week 3 on Hard with no Misses."});
+	backend_Achievements.createAchievement("week4_nomiss",{ name : "Lady Killer", description : "Beat Week 4 on Hard with no Misses."});
+	backend_Achievements.createAchievement("week5_nomiss",{ name : "Missless Christmas", description : "Beat Week 5 on Hard with no Misses."});
+	backend_Achievements.createAchievement("week6_nomiss",{ name : "Highscore!!", description : "Beat Week 6 on Hard with no Misses."});
+	backend_Achievements.createAchievement("week7_nomiss",{ name : "God Effing Damn It!", description : "Beat Week 7 on Hard with no Misses."});
+	backend_Achievements.createAchievement("weekend1_nomiss",{ name : "Just a Friendly Sparring", description : "Beat Weekend 1 on Hard with no Misses."});
 	backend_Achievements.createAchievement("ur_bad",{ name : "What a Funkin' Disaster!", description : "Complete a Song with a rating lower than 20%."});
 	backend_Achievements.createAchievement("ur_good",{ name : "Perfectionist", description : "Complete a Song with a rating of 100%."});
+	backend_Achievements.createAchievement("roadkill_enthusiast",{ name : "Roadkill Enthusiast", description : "Watch the Henchmen die 50 times.", maxScore : 50, maxDecimals : 0});
 	backend_Achievements.createAchievement("oversinging",{ name : "Oversinging Much...?", description : "Sing for 10 seconds without going back to Idle."});
 	backend_Achievements.createAchievement("hype",{ name : "Hyperactive", description : "Finish a Song without going back to Idle."});
 	backend_Achievements.createAchievement("two_keys",{ name : "Just the Two of Us", description : "Finish a Song pressing only two keys."});
 	backend_Achievements.createAchievement("toastie",{ name : "Toaster Gamer", description : "Have you tried to run the game on a toaster?"});
+	backend_Achievements.createAchievement("debugger",{ name : "Debugger", description : "Beat the \"Test\" Stage from the Chart Editor.", hidden : true});
 	backend_Achievements.createAchievement("pessy_easter_egg",{ name : "Engine Gal Pal", description : "Teehee, you found me~!", hidden : true});
 	backend_Achievements._originalLength = backend_Achievements._sortID + 1;
 };
@@ -13862,7 +14065,7 @@ var backend_WeekData = function(weekFile,fileName) {
 $hxClasses["backend.WeekData"] = backend_WeekData;
 backend_WeekData.__name__ = "backend.WeekData";
 backend_WeekData.createWeekFile = function() {
-	var weekFile = { songs : [["Bopeebo","face",[146,113,253]],["Fresh","face",[146,113,253]],["Dad Battle","face",[146,113,253]]], weekCharacters : ["bf","bf","gf"], weekBackground : "stage", weekBefore : "tutorial", storyName : "Your New Week", weekName : "Custom Week", startUnlocked : true, hiddenUntilUnlocked : false, hideStoryMode : false, hideFreeplay : false, difficulties : ""};
+	var weekFile = { songs : [["Bopeebo","face",[146,113,253]],["Fresh","face",[146,113,253]],["Dad Battle","face",[146,113,253]]], weekCharacters : ["dad","bf","gf"], weekBackground : "stage", weekBefore : "tutorial", storyName : "Your New Week", weekName : "Custom Week", startUnlocked : true, hiddenUntilUnlocked : false, hideStoryMode : false, hideFreeplay : false, difficulties : ""};
 	return weekFile;
 };
 backend_WeekData.reloadWeekFiles = function(isStoryMode) {
@@ -78939,6 +79142,1348 @@ flxanimate_zip_Zip.prototype = {
 	}
 	,__class__: flxanimate_zip_Zip
 };
+var funkin_vis_AudioBuffer = function(data,sampleRate) {
+	this.data = data;
+	this.sampleRate = sampleRate;
+};
+$hxClasses["funkin.vis.AudioBuffer"] = funkin_vis_AudioBuffer;
+funkin_vis_AudioBuffer.__name__ = "funkin.vis.AudioBuffer";
+funkin_vis_AudioBuffer.prototype = {
+	data: null
+	,sampleRate: null
+	,__class__: funkin_vis_AudioBuffer
+};
+var funkin_vis_AudioClip = function() { };
+$hxClasses["funkin.vis.AudioClip"] = funkin_vis_AudioClip;
+funkin_vis_AudioClip.__name__ = "funkin.vis.AudioClip";
+funkin_vis_AudioClip.__isInterface__ = true;
+funkin_vis_AudioClip.prototype = {
+	get_currentFrame: null
+	,audioBuffer: null
+	,source: null
+	,__class__: funkin_vis_AudioClip
+	,__properties__: {get_currentFrame:"get_currentFrame"}
+};
+var funkin_vis_LogHelper = function() { };
+$hxClasses["funkin.vis.LogHelper"] = funkin_vis_LogHelper;
+funkin_vis_LogHelper.__name__ = "funkin.vis.LogHelper";
+funkin_vis_LogHelper.log2 = function(x) {
+	return Math.log(x) / Math.log(2);
+};
+funkin_vis_LogHelper.log10 = function(x) {
+	return Math.log(x) / Math.log(10);
+};
+var funkin_vis_Scaling = function() { };
+$hxClasses["funkin.vis.Scaling"] = funkin_vis_Scaling;
+funkin_vis_Scaling.__name__ = "funkin.vis.Scaling";
+funkin_vis_Scaling.freqScaleMel = function(freq) {
+	return funkin_vis_LogHelper.log2(1 + freq / 700);
+};
+funkin_vis_Scaling.invFreqScaleMel = function(x) {
+	return 700 * Math.pow(2,x - 1);
+};
+funkin_vis_Scaling.freqScaleBark = function(freq) {
+	return 26.81 * freq / (1960 + freq) - 0.53;
+};
+funkin_vis_Scaling.invFreqScaleBark = function(x) {
+	return 1960 / (26.81 / (x + .53) - 1);
+};
+funkin_vis_Scaling.freqScaleLog = function(freq) {
+	return funkin_vis_LogHelper.log10(1 + freq / 1000);
+};
+funkin_vis_Scaling.invFreqScaleLog = function(x) {
+	return 1000 * Math.pow(10,x - 1);
+};
+var funkin_vis__$internal_html5_AnalyzerNode = function(audioClip) {
+	this.fftSize = 2048;
+	this.minDecibels = -100;
+	this.maxDecibels = -30;
+	haxe_Log.trace("Loading audioClip",{ fileName : "funkin/vis/_internal/html5/AnalyzerNode.hx", lineNumber : 25, className : "funkin.vis._internal.html5.AnalyzerNode", methodName : "new"});
+	this.analyzer = new AnalyserNode(audioClip.source._sounds[0]._node.context);
+	audioClip.source._sounds[0]._node.connect(this.analyzer);
+	this.getFloatFrequencyData();
+};
+$hxClasses["funkin.vis._internal.html5.AnalyzerNode"] = funkin_vis__$internal_html5_AnalyzerNode;
+funkin_vis__$internal_html5_AnalyzerNode.__name__ = "funkin.vis._internal.html5.AnalyzerNode";
+funkin_vis__$internal_html5_AnalyzerNode.prototype = {
+	analyzer: null
+	,maxDecibels: null
+	,minDecibels: null
+	,fftSize: null
+	,getFloatFrequencyData: function() {
+		var array = new Float32Array(this.analyzer.frequencyBinCount);
+		this.analyzer.fftSize = this.fftSize;
+		this.analyzer.minDecibels = this.minDecibels;
+		this.analyzer.maxDecibels = this.maxDecibels;
+		this.analyzer.getFloatFrequencyData(array);
+		return array;
+	}
+	,__class__: funkin_vis__$internal_html5_AnalyzerNode
+};
+var funkin_vis_audioclip_frontends_LimeAudioClip = function(audioSource) {
+	var data = audioSource.buffer.data;
+	var sampleRate = audioSource.buffer.get_src()._sounds[0]._node.context.sampleRate;
+	this.audioBuffer = new funkin_vis_AudioBuffer(data,sampleRate);
+	this.source = audioSource.buffer.get_src();
+};
+$hxClasses["funkin.vis.audioclip.frontends.LimeAudioClip"] = funkin_vis_audioclip_frontends_LimeAudioClip;
+funkin_vis_audioclip_frontends_LimeAudioClip.__name__ = "funkin.vis.audioclip.frontends.LimeAudioClip";
+funkin_vis_audioclip_frontends_LimeAudioClip.__interfaces__ = [funkin_vis_AudioClip];
+funkin_vis_audioclip_frontends_LimeAudioClip.prototype = {
+	audioBuffer: null
+	,source: null
+	,get_currentFrame: function() {
+		var dataLength = 0;
+		dataLength = this.source.length;
+		var value = flixel_math_FlxMath.remapToRange(flixel_FlxG.sound.music._time,0,flixel_FlxG.sound.music._length,0,dataLength) | 0;
+		if(value < 0) {
+			return -1;
+		}
+		return value;
+	}
+	,__class__: funkin_vis_audioclip_frontends_LimeAudioClip
+	,__properties__: {get_currentFrame:"get_currentFrame"}
+};
+var funkin_vis_dsp_Complex = {};
+funkin_vis_dsp_Complex.__properties__ = {get_magnitude:"get_magnitude",get_angle:"get_angle"};
+funkin_vis_dsp_Complex._new = function(real,imag) {
+	return { real : real, imag : imag};
+};
+funkin_vis_dsp_Complex.fromReal = function(r) {
+	return { real : r, imag : 0};
+};
+funkin_vis_dsp_Complex.get_angle = function(this1) {
+	return Math.atan2(this1.imag,this1.real);
+};
+funkin_vis_dsp_Complex.get_magnitude = function(this1) {
+	return Math.sqrt(this1.real * this1.real + this1.imag * this1.imag);
+};
+funkin_vis_dsp_Complex.add = function(this1,rhs) {
+	return { real : this1.real + rhs.real, imag : this1.imag + rhs.imag};
+};
+funkin_vis_dsp_Complex.sub = function(this1,rhs) {
+	return { real : this1.real - rhs.real, imag : this1.imag - rhs.imag};
+};
+funkin_vis_dsp_Complex.mult = function(this1,rhs) {
+	return { real : this1.real * rhs.real - this1.imag * rhs.imag, imag : this1.real * rhs.imag + this1.imag * rhs.real};
+};
+funkin_vis_dsp_Complex.conj = function(this1) {
+	return { real : this1.real, imag : -this1.imag};
+};
+funkin_vis_dsp_Complex.scale = function(this1,k) {
+	return { real : this1.real * k, imag : this1.imag * k};
+};
+funkin_vis_dsp_Complex.copy = function(this1) {
+	return { real : this1.real, imag : this1.imag};
+};
+funkin_vis_dsp_Complex.exp = function(w) {
+	return { real : Math.cos(w), imag : Math.sin(w)};
+};
+var funkin_vis_dsp_FFT = function() { };
+$hxClasses["funkin.vis.dsp.FFT"] = funkin_vis_dsp_FFT;
+funkin_vis_dsp_FFT.__name__ = "funkin.vis.dsp.FFT";
+funkin_vis_dsp_FFT.fft = function(input) {
+	return funkin_vis_dsp_FFT.do_fft(input,false);
+};
+funkin_vis_dsp_FFT.rfft = function(input) {
+	var f = funkin_vis_dsp_Complex.fromReal;
+	var result = new Array(input.length);
+	var _g = 0;
+	var _g1 = input.length;
+	while(_g < _g1) {
+		var i = _g++;
+		result[i] = f(input[i]);
+	}
+	var s = funkin_vis_dsp_FFT.fft(result);
+	return s.slice(0,(s.length / 2 | 0) + 1);
+};
+funkin_vis_dsp_FFT.ifft = function(input) {
+	return funkin_vis_dsp_FFT.do_fft(input,true);
+};
+funkin_vis_dsp_FFT.do_fft = function(input,inverse) {
+	var n = funkin_vis_dsp_FFT.nextPow2(input.length);
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = n;
+	while(_g1 < _g2) {
+		var i = _g1++;
+		if(i < input.length) {
+			_g.push(input[i]);
+		} else {
+			_g.push(funkin_vis_dsp_Complex.zero);
+		}
+	}
+	var ts = _g;
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = n;
+	while(_g1 < _g2) {
+		var _ = _g1++;
+		_g.push(funkin_vis_dsp_Complex.zero);
+	}
+	var fs = _g;
+	var tmp;
+	if(inverse) {
+		var tmp1 = funkin_vis_dsp_FFT.twiddleFactorsInversed;
+		tmp = (tmp1 != null ? tmp1.length : null) != n;
+	} else {
+		tmp = false;
+	}
+	if(tmp) {
+		funkin_vis_dsp_FFT.precomputeTwiddleFactors(n,true);
+	} else {
+		var tmp;
+		if(!inverse) {
+			var tmp1 = funkin_vis_dsp_FFT.twiddleFactors;
+			tmp = (tmp1 != null ? tmp1.length : null) != n;
+		} else {
+			tmp = false;
+		}
+		if(tmp) {
+			funkin_vis_dsp_FFT.precomputeTwiddleFactors(n,false);
+		}
+	}
+	funkin_vis_dsp_FFT.ditfft4(ts,0,fs,0,n,1,inverse);
+	if(inverse) {
+		var result = new Array(fs.length);
+		var _g = 0;
+		var _g1 = fs.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var z = fs[i];
+			var k = 1 / n;
+			result[i] = { real : z.real * k, imag : z.imag * k};
+		}
+		return result;
+	} else {
+		return fs;
+	}
+};
+funkin_vis_dsp_FFT.ditfft2 = function(time,t,freq,f,n,step,inverse) {
+	if(n == 1) {
+		var this1 = time[t];
+		freq[f] = { real : this1.real, imag : this1.imag};
+	} else {
+		var halfLen = n / 2 | 0;
+		funkin_vis_dsp_FFT.ditfft2(time,t,freq,f,halfLen,step * 2,inverse);
+		funkin_vis_dsp_FFT.ditfft2(time,t + step,freq,f + halfLen,halfLen,step * 2,inverse);
+		var _g = 0;
+		var _g1 = halfLen;
+		while(_g < _g1) {
+			var k = _g++;
+			var twiddle = inverse ? funkin_vis_dsp_FFT.twiddleFactorsInversed[k] : funkin_vis_dsp_FFT.twiddleFactors[k];
+			var this1 = freq[f + k];
+			var even_real = this1.real;
+			var even_imag = this1.imag;
+			var this2 = freq[f + k + halfLen];
+			var odd_real = this2.real;
+			var odd_imag = this2.imag;
+			var rhs_real = twiddle.real * odd_real - twiddle.imag * odd_imag;
+			var rhs_imag = twiddle.real * odd_imag + twiddle.imag * odd_real;
+			freq[f + k] = { real : even_real + rhs_real, imag : even_imag + rhs_imag};
+			var rhs_real1 = twiddle.real * odd_real - twiddle.imag * odd_imag;
+			var rhs_imag1 = twiddle.real * odd_imag + twiddle.imag * odd_real;
+			freq[f + k + halfLen] = { real : even_real - rhs_real1, imag : even_imag - rhs_imag1};
+		}
+	}
+};
+funkin_vis_dsp_FFT.ditfft4 = function(time,t,freq,f,n,step,inverse) {
+	if(n == 4) {
+		var _g = 0;
+		var _g1 = n;
+		while(_g < _g1) {
+			var k = _g++;
+			var sum = funkin_vis_dsp_Complex.zero;
+			var w = (inverse ? 1 : -1) * 2 * Math.PI * k / n;
+			var twiddle_real = Math.cos(w);
+			var twiddle_imag = Math.sin(w);
+			var this1 = time[t + 0 * step];
+			var rhs_real = this1.real * twiddle_real - this1.imag * twiddle_imag;
+			var rhs_imag = this1.real * twiddle_imag + this1.imag * twiddle_real;
+			sum = { real : sum.real + rhs_real, imag : sum.imag + rhs_imag};
+			var w1 = (inverse ? 1 : -1) * 2 * Math.PI * k / n;
+			var twiddle_real1 = Math.cos(w1);
+			var twiddle_imag1 = Math.sin(w1);
+			var this2 = time[t + step];
+			var rhs_real1 = this2.real * twiddle_real1 - this2.imag * twiddle_imag1;
+			var rhs_imag1 = this2.real * twiddle_imag1 + this2.imag * twiddle_real1;
+			sum = { real : sum.real + rhs_real1, imag : sum.imag + rhs_imag1};
+			var w2 = (inverse ? 1 : -1) * 2 * Math.PI * k / n;
+			var twiddle_real2 = Math.cos(w2);
+			var twiddle_imag2 = Math.sin(w2);
+			var this3 = time[t + 2 * step];
+			var rhs_real2 = this3.real * twiddle_real2 - this3.imag * twiddle_imag2;
+			var rhs_imag2 = this3.real * twiddle_imag2 + this3.imag * twiddle_real2;
+			sum = { real : sum.real + rhs_real2, imag : sum.imag + rhs_imag2};
+			var w3 = (inverse ? 1 : -1) * 2 * Math.PI * k / n;
+			var twiddle_real3 = Math.cos(w3);
+			var twiddle_imag3 = Math.sin(w3);
+			var this4 = time[t + 3 * step];
+			var rhs_real3 = this4.real * twiddle_real3 - this4.imag * twiddle_imag3;
+			var rhs_imag3 = this4.real * twiddle_imag3 + this4.imag * twiddle_real3;
+			sum = { real : sum.real + rhs_real3, imag : sum.imag + rhs_imag3};
+			freq[f + k] = sum;
+		}
+	} else {
+		var quarterLen = n / 4 | 0;
+		funkin_vis_dsp_FFT.ditfft4(time,t,freq,f,quarterLen,step * 4,inverse);
+		funkin_vis_dsp_FFT.ditfft4(time,t + step,freq,f + quarterLen,quarterLen,step * 4,inverse);
+		funkin_vis_dsp_FFT.ditfft4(time,t + 2 * step,freq,f + 2 * quarterLen,quarterLen,step * 4,inverse);
+		funkin_vis_dsp_FFT.ditfft4(time,t + 3 * step,freq,f + 3 * quarterLen,quarterLen,step * 4,inverse);
+		var _g = 0;
+		var _g1 = quarterLen;
+		while(_g < _g1) {
+			var k = _g++;
+			var w = (inverse ? 1 : -1) * 2 * Math.PI * k / n;
+			var twiddle0_real = Math.cos(w);
+			var twiddle0_imag = Math.sin(w);
+			var w1 = (inverse ? 1 : -1) * 2 * Math.PI * k / n;
+			var twiddle1_real = Math.cos(w1);
+			var twiddle1_imag = Math.sin(w1);
+			var w2 = (inverse ? 1 : -1) * 2 * Math.PI * k * 2 / n;
+			var twiddle2_real = Math.cos(w2);
+			var twiddle2_imag = Math.sin(w2);
+			var w3 = (inverse ? 1 : -1) * 2 * Math.PI * k * 3 / n;
+			var twiddle3_real = Math.cos(w3);
+			var twiddle3_imag = Math.sin(w3);
+			var this1 = freq[f + k];
+			var f0_real = this1.real;
+			var f0_imag = this1.imag;
+			var this2 = freq[f + k + quarterLen];
+			var this_real = this2.real;
+			var this_imag = this2.imag;
+			var f1_real = this_real * twiddle1_real - this_imag * twiddle1_imag;
+			var f1_imag = this_real * twiddle1_imag + this_imag * twiddle1_real;
+			var this3 = freq[f + k + 2 * quarterLen];
+			var this_real1 = this3.real;
+			var this_imag1 = this3.imag;
+			var f2_real = this_real1 * twiddle2_real - this_imag1 * twiddle2_imag;
+			var f2_imag = this_real1 * twiddle2_imag + this_imag1 * twiddle2_real;
+			var this4 = freq[f + k + 3 * quarterLen];
+			var this_real2 = this4.real;
+			var this_imag2 = this4.imag;
+			var f3_real = this_real2 * twiddle3_real - this_imag2 * twiddle3_imag;
+			var f3_imag = this_real2 * twiddle3_imag + this_imag2 * twiddle3_real;
+			var this_real3 = f0_real + f1_real;
+			var this_imag3 = f0_imag + f1_imag;
+			var this_real4 = this_real3 + f2_real;
+			var this_imag4 = this_imag3 + f2_imag;
+			freq[f + k] = { real : this_real4 + f3_real, imag : this_imag4 + f3_imag};
+			var this_real5 = f0_real + f1_real;
+			var this_imag5 = f0_imag + f1_imag;
+			var this_real6 = this_real5 - f2_real;
+			var this_imag6 = this_imag5 - f2_imag;
+			freq[f + k + quarterLen] = { real : this_real6 - f3_real, imag : this_imag6 - f3_imag};
+			var this_real7 = f0_real - f1_real;
+			var this_imag7 = f0_imag - f1_imag;
+			var this_real8 = this_real7 - f2_real;
+			var this_imag8 = this_imag7 - f2_imag;
+			freq[f + k + 2 * quarterLen] = { real : this_real8 + f3_real, imag : this_imag8 + f3_imag};
+			var this_real9 = f0_real - f1_real;
+			var this_imag9 = f0_imag - f1_imag;
+			var this_real10 = this_real9 + f2_real;
+			var this_imag10 = this_imag9 + f2_imag;
+			freq[f + k + 3 * quarterLen] = { real : this_real10 - f3_real, imag : this_imag10 - f3_imag};
+		}
+	}
+};
+funkin_vis_dsp_FFT.dft = function(ts,inverse) {
+	if(inverse == null) {
+		inverse = false;
+	}
+	var n = ts.length;
+	var fs = [];
+	fs.length = n;
+	var _g = 0;
+	var _g1 = n;
+	while(_g < _g1) {
+		var f = _g++;
+		var sum = funkin_vis_dsp_Complex.zero;
+		var _g2 = 0;
+		var _g3 = n;
+		while(_g2 < _g3) {
+			var t = _g2++;
+			var this1 = ts[t];
+			var w = (inverse ? 1 : -1) * 2 * Math.PI * f * t / n;
+			var rhs_real = Math.cos(w);
+			var rhs_imag = Math.sin(w);
+			var rhs_real1 = this1.real * rhs_real - this1.imag * rhs_imag;
+			var rhs_imag1 = this1.real * rhs_imag + this1.imag * rhs_real;
+			sum = { real : sum.real + rhs_real1, imag : sum.imag + rhs_imag1};
+		}
+		var tmp;
+		if(inverse) {
+			var k = 1 / n;
+			tmp = { real : sum.real * k, imag : sum.imag * k};
+		} else {
+			tmp = sum;
+		}
+		fs[f] = tmp;
+	}
+	return fs;
+};
+funkin_vis_dsp_FFT.precomputeTwiddleFactors = function(maxN,inverse) {
+	var n = maxN;
+	var base_len = maxN;
+	var len = base_len * 4;
+	var twiddles = [];
+	var _g = 0;
+	var _g1 = n / 2 | 0;
+	while(_g < _g1) {
+		var k = _g++;
+		var twiddle = funkin_vis_dsp_FFT.computeTwiddle(k,n,inverse);
+		twiddles.push(twiddle);
+	}
+	if(inverse) {
+		funkin_vis_dsp_FFT.twiddleFactorsInversed = twiddles;
+	} else {
+		funkin_vis_dsp_FFT.twiddleFactors = twiddles;
+	}
+};
+funkin_vis_dsp_FFT.computeTwiddle = function(index,fft_len,inverse) {
+	if(inverse == null) {
+		inverse = false;
+	}
+	var constant = -2 * Math.PI / fft_len;
+	var angle = constant * index;
+	var result = { real : Math.cos(angle), imag : Math.sin(angle)};
+	if(inverse) {
+		return { real : result.real, imag : -result.imag};
+	} else {
+		return result;
+	}
+};
+funkin_vis_dsp_FFT.useTwiddleFactor = function(n,k,inverse) {
+	if(inverse == null) {
+		inverse = false;
+	}
+	var twiddlesToUse = inverse ? funkin_vis_dsp_FFT.twiddleFactorsInversed : funkin_vis_dsp_FFT.twiddleFactors;
+	return twiddlesToUse[k];
+};
+funkin_vis_dsp_FFT.nextPow2 = function(x) {
+	if(x < 2) {
+		return 1;
+	} else if((x & x - 1) == 0) {
+		return x;
+	}
+	var pow = 2;
+	--x;
+	while((x >>= 1) != 0) pow <<= 1;
+	return pow;
+};
+funkin_vis_dsp_FFT.main = function() {
+	var Fs = 44100.0;
+	var N = 512;
+	var halfN = N / 2 | 0;
+	var freqs = [5919.911];
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = N;
+	while(_g1 < _g2) {
+		var n = _g1++;
+		var result = new Array(freqs.length);
+		var _g3 = 0;
+		var _g4 = freqs.length;
+		while(_g3 < _g4) {
+			var i = _g3++;
+			result[i] = Math.sin(2 * Math.PI * freqs[i] * n / Fs);
+		}
+		_g.push(funkin_vis_dsp_Signal.sum(result));
+	}
+	var ts = _g;
+	var fs_pos = funkin_vis_dsp_FFT.rfft(ts);
+	var _g = [];
+	var _g1 = -(halfN - 1);
+	var _g2 = 0;
+	while(_g1 < _g2) {
+		var k = _g1++;
+		var this1 = fs_pos[-k];
+		_g.push({ real : this1.real, imag : -this1.imag});
+	}
+	var fs_fft_array = _g.concat(fs_pos);
+	var fs_fft_offset = -(halfN - 1);
+	var f = funkin_vis_dsp_Complex.fromReal;
+	var result = new Array(ts.length);
+	var _g = 0;
+	var _g1 = ts.length;
+	while(_g < _g1) {
+		var i = _g++;
+		result[i] = f(ts[i]);
+	}
+	var fs_dft_array = funkin_vis_dsp_OffsetArray.circShift(funkin_vis_dsp_FFT.dft(result),halfN - 1);
+	var fs_dft_offset = -(halfN - 1);
+	var _g = [];
+	var _g1 = -(halfN - 1);
+	var _g2 = halfN;
+	while(_g1 < _g2) {
+		var k = _g1++;
+		var this1 = fs_fft_array[k - fs_fft_offset];
+		var rhs = fs_dft_array[k - fs_dft_offset];
+		_g.push({ real : this1.real - rhs.real, imag : this1.imag - rhs.imag});
+	}
+	var fs_err = _g;
+	var result = new Array(fs_err.length);
+	var _g = 0;
+	var _g1 = fs_err.length;
+	while(_g < _g1) {
+		var i = _g++;
+		var z = fs_err[i];
+		result[i] = Math.sqrt(z.real * z.real + z.imag * z.imag);
+	}
+	var max_fs_err = funkin_vis_dsp_Signal.max(result);
+	if(max_fs_err > 1e-6) {
+		haxe_Log.trace("FT Error: " + max_fs_err,null);
+	}
+	var _this = fs_fft_array;
+	var result = new Array(_this.length);
+	var _g = 0;
+	var _g1 = _this.length;
+	while(_g < _g1) {
+		var i = _g++;
+		var z = _this[i];
+		result[i] = Math.sqrt(z.real * z.real + z.imag * z.imag);
+	}
+	var _this = funkin_vis_dsp_Signal.findPeaks(result);
+	var result = new Array(_this.length);
+	var _g = 0;
+	var _g1 = _this.length;
+	while(_g < _g1) {
+		var i = _g++;
+		result[i] = (_this[i] - (halfN - 1)) * Fs / N;
+	}
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = result;
+	while(_g1 < _g2.length) {
+		var v = _g2[_g1];
+		++_g1;
+		if(v >= 0) {
+			_g.push(v);
+		}
+	}
+	var freqis = _g;
+	if(freqis.length != freqs.length) {
+		haxe_Log.trace("Found frequencies: " + Std.string(freqis),{ fileName : "funkin/vis/dsp/FFT.hx", lineNumber : 233, className : "funkin.vis.dsp.FFT", methodName : "main"});
+	} else {
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = freqs.length;
+		while(_g1 < _g2) {
+			var i = _g1++;
+			_g.push(freqis[i] - freqs[i]);
+		}
+		var freqs_err = _g;
+		var f = Math.abs;
+		var result = new Array(freqs_err.length);
+		var _g = 0;
+		var _g1 = freqs_err.length;
+		while(_g < _g1) {
+			var i = _g++;
+			result[i] = f(freqs_err[i]);
+		}
+		var max_freqs_err = funkin_vis_dsp_Signal.max(result);
+		if(max_freqs_err > Fs / N) {
+			haxe_Log.trace("Frequency Errors: " + Std.string(freqs_err),{ fileName : "funkin/vis/dsp/FFT.hx", lineNumber : 237, className : "funkin.vis.dsp.FFT", methodName : "main"});
+		}
+	}
+	var _this = funkin_vis_dsp_OffsetArray.circShift(fs_fft_array,-(halfN - 1));
+	var result = new Array(_this.length);
+	var _g = 0;
+	var _g1 = _this.length;
+	while(_g < _g1) {
+		var i = _g++;
+		var z = _this[i];
+		var k = 1 / Fs;
+		result[i] = { real : z.real * k, imag : z.imag * k};
+	}
+	var ts_ifft = funkin_vis_dsp_FFT.ifft(result);
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = N;
+	while(_g1 < _g2) {
+		var n = _g1++;
+		var this1 = ts_ifft[n];
+		var this_real = this1.real * Fs;
+		var this_imag = this1.imag * Fs;
+		_g.push(this_real - ts[n]);
+	}
+	var ts_err = _g;
+	var f = Math.abs;
+	var result = new Array(ts_err.length);
+	var _g = 0;
+	var _g1 = ts_err.length;
+	while(_g < _g1) {
+		var i = _g++;
+		result[i] = f(ts_err[i]);
+	}
+	var max_ts_err = funkin_vis_dsp_Signal.max(result);
+	if(max_ts_err > 1e-6) {
+		haxe_Log.trace("IFT Error: " + max_ts_err,null);
+	}
+};
+var funkin_vis_dsp_OffsetArray = {};
+funkin_vis_dsp_OffsetArray.__properties__ = {get_length:"get_length"};
+funkin_vis_dsp_OffsetArray._new = function(array,offset) {
+	return { array : array, offset : offset};
+};
+funkin_vis_dsp_OffsetArray.get_length = function(this1) {
+	return this1.array.length;
+};
+funkin_vis_dsp_OffsetArray.get = function(this1,index) {
+	return this1.array[index - this1.offset];
+};
+funkin_vis_dsp_OffsetArray.set = function(this1,index,value) {
+	this1.array[index - this1.offset] = value;
+};
+funkin_vis_dsp_OffsetArray.keyValueIterator = function(this1) {
+	return new funkin_vis_dsp__$OffsetArray_OffsetArrayIterator(this1.array,this1.offset);
+};
+funkin_vis_dsp_OffsetArray.fromArray = function(array) {
+	return { array : array, offset : 0};
+};
+funkin_vis_dsp_OffsetArray.toArray = function(this1) {
+	return this1.array;
+};
+funkin_vis_dsp_OffsetArray.circShift = function(array,n) {
+	if(n < 0) {
+		return funkin_vis_dsp_OffsetArray.circShift(array,array.length + n);
+	}
+	var shifted = [];
+	n %= array.length;
+	var _g = array.length - n;
+	var _g1 = array.length;
+	while(_g < _g1) {
+		var i = _g++;
+		shifted.push(array[i]);
+	}
+	var _g = 0;
+	var _g1 = array.length - n;
+	while(_g < _g1) {
+		var i = _g++;
+		shifted.push(array[i]);
+	}
+	return shifted;
+};
+var funkin_vis_dsp__$OffsetArray_OffsetArrayIterator = function(array,offset) {
+	this.array = array;
+	this.offset = offset;
+	this.enumeration = 0;
+};
+$hxClasses["funkin.vis.dsp._OffsetArray.OffsetArrayIterator"] = funkin_vis_dsp__$OffsetArray_OffsetArrayIterator;
+funkin_vis_dsp__$OffsetArray_OffsetArrayIterator.__name__ = "funkin.vis.dsp._OffsetArray.OffsetArrayIterator";
+funkin_vis_dsp__$OffsetArray_OffsetArrayIterator.prototype = {
+	array: null
+	,offset: null
+	,enumeration: null
+	,next: function() {
+		var i = this.enumeration++;
+		return { key : i + this.offset, value : this.array[i]};
+	}
+	,hasNext: function() {
+		return this.enumeration < this.array.length;
+	}
+	,__class__: funkin_vis_dsp__$OffsetArray_OffsetArrayIterator
+};
+var funkin_vis_dsp_RecentPeakFinder = function(length) {
+	if(length == null) {
+		length = 30;
+	}
+	this.peak = 0;
+	this.bufferIndex = 0;
+	this.buffer = [];
+	this.buffer.length = length;
+};
+$hxClasses["funkin.vis.dsp.RecentPeakFinder"] = funkin_vis_dsp_RecentPeakFinder;
+funkin_vis_dsp_RecentPeakFinder.__name__ = "funkin.vis.dsp.RecentPeakFinder";
+funkin_vis_dsp_RecentPeakFinder.prototype = {
+	buffer: null
+	,bufferIndex: null
+	,peak: null
+	,push: function(value) {
+		this.buffer[this.bufferIndex] = value;
+		if(value > this.peak) {
+			this.peak = value;
+		} else {
+			this.peak = funkin_vis_dsp_Signal.max(this.buffer);
+		}
+		this.bufferIndex = this.bufferIndex + 1 == this.buffer.length ? 0 : this.bufferIndex + 1;
+	}
+	,get_lastValue: function() {
+		if(this.bufferIndex == 0) {
+			return this.buffer[this.buffer.length - 1];
+		} else {
+			return this.buffer[this.bufferIndex - 1];
+		}
+	}
+	,__class__: funkin_vis_dsp_RecentPeakFinder
+	,__properties__: {get_lastValue:"get_lastValue"}
+};
+var funkin_vis_dsp_Signal = function() { };
+$hxClasses["funkin.vis.dsp.Signal"] = funkin_vis_dsp_Signal;
+funkin_vis_dsp_Signal.__name__ = "funkin.vis.dsp.Signal";
+funkin_vis_dsp_Signal.smooth = function(y,n) {
+	if(n <= 0) {
+		return null;
+	} else if(n == 1) {
+		return y.slice();
+	} else {
+		var smoothed = [];
+		smoothed.length = y.length;
+		var _g = 0;
+		var _g1 = y.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var m = i + 1 < n ? i : n - 1;
+			smoothed[i] = funkin_vis_dsp_Signal.sum(y.slice(i - m,i + 1));
+		}
+		return smoothed;
+	}
+};
+funkin_vis_dsp_Signal.findPeaks = function(y,threshold,minHeight) {
+	threshold = threshold == null ? 0.0 : Math.abs(threshold);
+	if(minHeight == null) {
+		minHeight = funkin_vis_dsp_Signal.min(y);
+	}
+	var peaks = [];
+	var _g = [];
+	var _g1 = 1;
+	var _g2 = y.length;
+	while(_g1 < _g2) {
+		var i = _g1++;
+		_g.push(y[i] - y[i - 1]);
+	}
+	var dy = _g;
+	var _g = 1;
+	var _g1 = dy.length;
+	while(_g < _g1) {
+		var i = _g++;
+		if(dy[i - 1] > threshold && dy[i] < -threshold && y[i] > minHeight) {
+			peaks.push(i);
+		}
+	}
+	return peaks;
+};
+funkin_vis_dsp_Signal.sum = function(array) {
+	var sum = 0.0;
+	var c = 0.0;
+	var _g = 0;
+	while(_g < array.length) {
+		var v = array[_g];
+		++_g;
+		var t = sum + v;
+		c += Math.abs(sum) >= Math.abs(v) ? sum - t + v : v - t + sum;
+		sum = t;
+	}
+	return sum + c;
+};
+funkin_vis_dsp_Signal.mean = function(y) {
+	return funkin_vis_dsp_Signal.sum(y) / y.length;
+};
+funkin_vis_dsp_Signal.max = function(y) {
+	return Lambda.fold(y,Math.max,y[0]);
+};
+funkin_vis_dsp_Signal.maxi = function(y) {
+	return Lambda.foldi(y,function(yi,m,i) {
+		if(yi > y[m]) {
+			return i;
+		} else {
+			return m;
+		}
+	},0);
+};
+funkin_vis_dsp_Signal.min = function(y) {
+	return Lambda.fold(y,Math.min,y[0]);
+};
+funkin_vis_dsp_Signal.mini = function(y) {
+	return Lambda.foldi(y,function(yi,m,i) {
+		if(yi < y[m]) {
+			return i;
+		} else {
+			return m;
+		}
+	},0);
+};
+var funkin_vis_dsp_MathType = $hxEnums["funkin.vis.dsp.MathType"] = { __ename__:"funkin.vis.dsp.MathType",__constructs__:null
+	,Round: {_hx_name:"Round",_hx_index:0,__enum__:"funkin.vis.dsp.MathType",toString:$estr}
+	,Floor: {_hx_name:"Floor",_hx_index:1,__enum__:"funkin.vis.dsp.MathType",toString:$estr}
+	,Ceil: {_hx_name:"Ceil",_hx_index:2,__enum__:"funkin.vis.dsp.MathType",toString:$estr}
+	,Cast: {_hx_name:"Cast",_hx_index:3,__enum__:"funkin.vis.dsp.MathType",toString:$estr}
+};
+funkin_vis_dsp_MathType.__constructs__ = [funkin_vis_dsp_MathType.Round,funkin_vis_dsp_MathType.Floor,funkin_vis_dsp_MathType.Ceil,funkin_vis_dsp_MathType.Cast];
+var funkin_vis_dsp_SpectralAnalyzer = function(audioSource,barCount,smoothingTimeConstant,peakHold) {
+	if(peakHold == null) {
+		peakHold = 30;
+	}
+	if(smoothingTimeConstant == null) {
+		smoothingTimeConstant = 0.8;
+	}
+	this._buffer = [];
+	this.bars = [];
+	this.fftN2 = 2048;
+	this.maxFreq = 22000;
+	this.minFreq = 50;
+	this.fftN = 4096;
+	this.maxDb = -20;
+	this.minDb = -70;
+	this.audioSource = audioSource;
+	this.audioClip = new funkin_vis_audioclip_frontends_LimeAudioClip(audioSource);
+	this.barCount = barCount;
+	this.smoothingTimeConstant = smoothingTimeConstant;
+	this.peakHold = peakHold;
+	this.htmlAnalyzer = new funkin_vis__$internal_html5_AnalyzerNode(this.audioClip);
+	this.calcBars(barCount,peakHold);
+};
+$hxClasses["funkin.vis.dsp.SpectralAnalyzer"] = funkin_vis_dsp_SpectralAnalyzer;
+funkin_vis_dsp_SpectralAnalyzer.__name__ = "funkin.vis.dsp.SpectralAnalyzer";
+funkin_vis_dsp_SpectralAnalyzer.clamp_Float = function(val,min,max) {
+	if(val <= min) {
+		return min;
+	} else if(val >= max) {
+		return max;
+	} else {
+		return val;
+	}
+};
+funkin_vis_dsp_SpectralAnalyzer.prototype = {
+	minDb: null
+	,maxDb: null
+	,fftN: null
+	,minFreq: null
+	,maxFreq: null
+	,audioSource: null
+	,audioClip: null
+	,barCount: null
+	,smoothingTimeConstant: null
+	,peakHold: null
+	,fftN2: null
+	,htmlAnalyzer: null
+	,bars: null
+	,freqToBin: function(freq,mathType) {
+		if(mathType == null) {
+			mathType = funkin_vis_dsp_MathType.Round;
+		}
+		var bin = freq * this.fftN2 / this.audioClip.audioBuffer.sampleRate;
+		switch(mathType._hx_index) {
+		case 0:
+			return Math.round(bin);
+		case 1:
+			return Math.floor(bin);
+		case 2:
+			return Math.ceil(bin);
+		case 3:
+			return bin | 0;
+		}
+	}
+	,normalizedB: function(value) {
+		var maxValue = this.maxDb;
+		var minValue = this.minDb;
+		var val = (value - minValue) / (maxValue - minValue);
+		if(val <= 0) {
+			return 0;
+		} else if(val >= 1) {
+			return 1;
+		} else {
+			return val;
+		}
+	}
+	,calcBars: function(barCount,peakHold) {
+		this.bars = [];
+		var logStep = (funkin_vis_LogHelper.log10(this.maxFreq) - funkin_vis_LogHelper.log10(this.minFreq)) / barCount;
+		var scaleMin = funkin_vis_LogHelper.log10(1 + this.minFreq / 1000);
+		var scaleMax = funkin_vis_LogHelper.log10(1 + this.maxFreq / 1000);
+		var curScale = scaleMin;
+		var _g = 0;
+		var _g1 = barCount;
+		while(_g < _g1) {
+			var i = _g++;
+			var curFreq = Math.pow(10,funkin_vis_LogHelper.log10(this.minFreq) + logStep * i);
+			var freqLo = curFreq;
+			var freqHi = Math.pow(10,funkin_vis_LogHelper.log10(this.minFreq) + logStep * (i + 1));
+			var binLo = this.freqToBin(freqLo,funkin_vis_dsp_MathType.Floor);
+			var binHi = this.freqToBin(freqHi);
+			this.bars.push({ binLo : binLo, binHi : binHi, freqLo : freqLo, freqHi : freqHi, recentValues : new funkin_vis_dsp_RecentPeakFinder(peakHold)});
+		}
+		if(this.bars[0].freqLo < this.minFreq) {
+			this.bars[0].freqLo = this.minFreq;
+			this.bars[0].binLo = this.freqToBin(this.minFreq,funkin_vis_dsp_MathType.Floor);
+		}
+		if(this.bars[this.bars.length - 1].freqHi > this.maxFreq) {
+			this.bars[this.bars.length - 1].freqHi = this.maxFreq;
+			this.bars[this.bars.length - 1].binHi = this.freqToBin(this.maxFreq,funkin_vis_dsp_MathType.Floor);
+		}
+	}
+	,getLevels: function(levels) {
+		if(levels == null) {
+			levels = [];
+		}
+		var amplitudes = this.htmlAnalyzer.getFloatFrequencyData();
+		var _g = 0;
+		var _g1 = this.bars.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var bar = this.bars[i];
+			var binLo = bar.binLo;
+			var binHi = bar.binHi;
+			var value = this.minDb;
+			var _g2 = binLo + 1;
+			var _g3 = binHi;
+			while(_g2 < _g3) {
+				var j = _g2++;
+				value = Math.max(value,amplitudes[j | 0]);
+			}
+			value = this.normalizedB(value);
+			bar.recentValues.push(value);
+			var recentPeak = bar.recentValues.peak;
+			if(levels[i] != null) {
+				levels[i].value = value;
+				levels[i].peak = recentPeak;
+			} else {
+				levels.push({ value : value, peak : recentPeak});
+			}
+		}
+		return levels;
+	}
+	,_buffer: null
+	,getSignal: function(data,bitsPerSample) {
+		switch(bitsPerSample) {
+		case 8:
+			this._buffer.length = data.length;
+			var _g = 0;
+			var _g1 = data.length;
+			while(_g < _g1) {
+				var i = _g++;
+				this._buffer[i] = UInt.toFloat(data[i]) / 128.0;
+			}
+			break;
+		case 16:
+			this._buffer.length = data.length / 2 | 0;
+			var _g = 0;
+			var _g1 = this._buffer.length;
+			while(_g < _g1) {
+				var i = _g++;
+				var pos = i * 2;
+				var val = data[pos] | data[pos + 1] << 8;
+				this._buffer[i] = ((val & 32768) != 0 ? val - 65536 : val) / 32767.0;
+			}
+			break;
+		case 24:
+			this._buffer.length = data.length / 3 | 0;
+			var _g = 0;
+			var _g1 = this._buffer.length;
+			while(_g < _g1) {
+				var i = _g++;
+				var pos = i * 3;
+				var val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16;
+				this._buffer[i] = ((val & 8388608) != 0 ? val - 16777216 : val) / 8388607.0;
+			}
+			break;
+		case 32:
+			this._buffer.length = data.length / 4 | 0;
+			var _g = 0;
+			var _g1 = this._buffer.length;
+			while(_g < _g1) {
+				var i = _g++;
+				var pos = i * 4;
+				this._buffer[i] = (data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24) / 2147483647.0;
+			}
+			break;
+		default:
+			haxe_Log.trace("Unknown integer audio format",{ fileName : "funkin/vis/dsp/SpectralAnalyzer.hx", lineNumber : 293, className : "funkin.vis.dsp.SpectralAnalyzer", methodName : "getSignal"});
+		}
+		return this._buffer;
+	}
+	,set_minDb: function(value) {
+		this.minDb = value;
+		this.htmlAnalyzer.minDecibels = value;
+		return value;
+	}
+	,set_maxDb: function(value) {
+		this.maxDb = value;
+		this.htmlAnalyzer.maxDecibels = value;
+		return value;
+	}
+	,set_fftN: function(value) {
+		this.fftN = value;
+		var pow2 = funkin_vis_dsp_FFT.nextPow2(value);
+		this.fftN2 = pow2 / 2 | 0;
+		this.htmlAnalyzer.fftSize = pow2;
+		this.calcBars(this.barCount,this.peakHold);
+		return pow2;
+	}
+	,__class__: funkin_vis_dsp_SpectralAnalyzer
+	,__properties__: {set_fftN:"set_fftN",set_maxDb:"set_maxDb",set_minDb:"set_minDb"}
+};
+var grig_audio_Complex = {};
+grig_audio_Complex.__properties__ = {set_imag:"set_imag",get_imag:"get_imag",set_real:"set_real",get_real:"get_real"};
+grig_audio_Complex.get_real = function(this1) {
+	return this1.real;
+};
+grig_audio_Complex.set_real = function(this1,n) {
+	return this1.real = n;
+};
+grig_audio_Complex.get_imag = function(this1) {
+	return this1.imag;
+};
+grig_audio_Complex.set_imag = function(this1,n) {
+	return this1.imag = n;
+};
+grig_audio_Complex._new = function(real,imag) {
+	return { real : real, imag : imag};
+};
+grig_audio_Complex.toString = function(this1) {
+	return "(" + this1.real + "," + this1.imag + ")";
+};
+grig_audio_Complex.sum = function(this1,z) {
+	return { real : this1.real + z.real, imag : this1.imag + z.imag};
+};
+grig_audio_Complex.sumWithFloat = function(this1,x) {
+	return { real : this1.real + x, imag : this1.imag};
+};
+grig_audio_Complex.subWithFloat = function(this1,x) {
+	return { real : this1.real + -x, imag : this1.imag};
+};
+grig_audio_Complex.sub = function(this1,z) {
+	return { real : this1.real - z.real, imag : this1.imag - z.imag};
+};
+grig_audio_Complex.mul = function(this1,z) {
+	return { real : this1.real * z.real - this1.imag * z.imag, imag : this1.real * z.imag + this1.imag * z.real};
+};
+grig_audio_Complex.mulWithFloat = function(this1,x) {
+	return { real : this1.real * x, imag : this1.imag * x};
+};
+grig_audio_Complex.div = function(this1,z) {
+	var d = Math.sqrt(z.real * z.real + z.imag * z.imag);
+	return { real : (this1.real * z.real + this1.imag * z.imag) / d, imag : (this1.imag * z.real - this1.real * z.imag) / d};
+};
+grig_audio_Complex.divWithFloat = function(this1,x) {
+	haxe_Log.trace(x,{ fileName : "grig/audio/Complex.hx", lineNumber : 93, className : "grig.audio._Complex.Complex_Impl_", methodName : "divWithFloat", customParams : [this1.real * x,this1.imag * x]});
+	var x1 = 1 / x;
+	return { real : this1.real * x1, imag : this1.imag * x1};
+};
+grig_audio_Complex.sumAsn = function(this1,z) {
+	this1 = { real : this1.real + z.real, imag : this1.imag + z.imag};
+	return this1;
+};
+grig_audio_Complex.sumWithFloatAsm = function(this1,x) {
+	this1 = { real : this1.real + x, imag : this1.imag};
+	return this1;
+};
+grig_audio_Complex.subAsn = function(this1,z) {
+	this1 = { real : this1.real - z.real, imag : this1.imag - z.imag};
+	return this1;
+};
+grig_audio_Complex.subWithFloatAsn = function(this1,x) {
+	this1 = { real : this1.real + -x, imag : this1.imag};
+	return this1;
+};
+grig_audio_Complex.mulAsn = function(this1,z) {
+	this1 = { real : this1.real * z.real - this1.imag * z.imag, imag : this1.real * z.imag + this1.imag * z.real};
+	return this1;
+};
+grig_audio_Complex.mulWithFloatAsn = function(this1,x) {
+	this1 = { real : this1.real * x, imag : this1.imag * x};
+	return this1;
+};
+grig_audio_Complex.divAsn = function(this1,z) {
+	var d = Math.sqrt(z.real * z.real + z.imag * z.imag);
+	this1 = { real : (this1.real * z.real + this1.imag * z.imag) / d, imag : (this1.imag * z.real - this1.real * z.imag) / d};
+	return this1;
+};
+grig_audio_Complex.divWithFloatAsn = function(this1,x) {
+	haxe_Log.trace(x,{ fileName : "grig/audio/Complex.hx", lineNumber : 93, className : "grig.audio._Complex.Complex_Impl_", methodName : "divWithFloat", customParams : [this1.real * x,this1.imag * x]});
+	var x1 = 1 / x;
+	this1 = { real : this1.real * x1, imag : this1.imag * x1};
+	return this1;
+};
+grig_audio_Complex.equals = function(this1,z) {
+	if(this1.real == z.real) {
+		return this1.imag == z.imag;
+	} else {
+		return false;
+	}
+};
+grig_audio_Complex.fromPolar = function(norm,phi) {
+	return { real : norm * Math.cos(phi), imag : norm * Math.sin(phi)};
+};
+grig_audio_Complex.abs = function(z) {
+	return Math.sqrt(z.real * z.real + z.imag * z.imag);
+};
+grig_audio_Complex.norm = function(z) {
+	return z.real * z.real + z.imag * z.imag;
+};
+grig_audio_Complex.arg = function(z) {
+	return Math.atan2(z.imag,z.real);
+};
+grig_audio_Complex.sqrt = function(z) {
+	var m = Math.sqrt(z.real * z.real + z.imag * z.imag);
+	var a = Math.atan2(z.imag,z.real) / 2.0;
+	return { real : m * Math.cos(a), imag : m * Math.sin(a)};
+};
+grig_audio_Complex.exp = function(z) {
+	var m = Math.exp(z.real);
+	var phi = z.imag;
+	return { real : m * Math.cos(phi), imag : m * Math.sin(phi)};
+};
+grig_audio_Complex.conj = function(z) {
+	return { real : z.real, imag : -z.imag};
+};
+grig_audio_Complex.pow = function(base,exponent) {
+	var m = Math.sqrt(base.real * base.real + base.imag * base.imag);
+	var a = Math.atan2(base.imag,base.real);
+	var nM = Math.pow(m,exponent);
+	var nA = a * exponent;
+	return { real : nM * Math.cos(nA), imag : nM * Math.sin(nA)};
+};
+grig_audio_Complex.log = function(z) {
+	var m = Math.sqrt(z.real * z.real + z.imag * z.imag);
+	var a = Math.atan2(z.imag,z.real);
+	if(m > 0) {
+		return { real : Math.log(m), imag : a};
+	} else {
+		return { real : NaN, imag : NaN};
+	}
+};
+var grig_audio_FFT = function(n) {
+	if(n == null) {
+		n = 512;
+	}
+	this.roots = [];
+	this.reversed = [];
+	this.hamming = [];
+	this.hamming.length = n;
+	this.reversed.length = n;
+	this.roots.length = n / 2 | 0;
+	this.n = n;
+	this.logN = grig_audio_FFT.log(2.0,n) | 0;
+	this.generateTables();
+};
+$hxClasses["grig.audio.FFT"] = grig_audio_FFT;
+grig_audio_FFT.__name__ = "grig.audio.FFT";
+grig_audio_FFT.clamp_Int = function(value,lower,upper) {
+	if(value < lower) {
+		return lower;
+	} else if(value > upper) {
+		return upper;
+	} else {
+		return value;
+	}
+};
+grig_audio_FFT.log = function(base,x) {
+	return Math.log(x) / Math.log(base);
+};
+grig_audio_FFT.prototype = {
+	hamming: null
+	,reversed: null
+	,roots: null
+	,n: null
+	,logN: null
+	,bitReverse: function(x) {
+		var y = 0;
+		var i = this.logN;
+		while(i > 0) {
+			y = y << 1 | x & 1;
+			x >>= 1;
+			--i;
+		}
+		return y;
+	}
+	,generateTables: function() {
+		var _g = 0;
+		var _g1 = this.n;
+		while(_g < _g1) {
+			var i = _g++;
+			this.hamming[i] = 1 - 0.85 * Math.cos(i * (grig_audio_FFT.TWO_PI / this.n));
+		}
+		var _g = 0;
+		var _g1 = this.reversed.length;
+		while(_g < _g1) {
+			var i = _g++;
+			this.reversed[i] = this.bitReverse(i);
+		}
+		var _g = 0;
+		var _g1 = this.n / 2 | 0;
+		while(_g < _g1) {
+			var i = _g++;
+			var z = { real : 0, imag : i * (grig_audio_FFT.TWO_PI / this.n)};
+			var m = Math.exp(z.real);
+			var phi = z.imag;
+			this.roots[i] = { real : m * Math.cos(phi), imag : m * Math.sin(phi)};
+		}
+	}
+	,doFFT: function(a) {
+		var half = 1;
+		var inv = a.length / 2 | 0;
+		while(inv > 0) {
+			var g = 0;
+			while(g < a.length) {
+				var b = 0;
+				var r = 0;
+				while(b < half) {
+					var even = a[g + b];
+					var this1 = this.roots[r];
+					var z = a[g + half + b];
+					var odd_real = this1.real * z.real - this1.imag * z.imag;
+					var odd_imag = this1.real * z.imag + this1.imag * z.real;
+					a[g + b] = { real : even.real + odd_real, imag : even.imag + odd_imag};
+					a[g + half + b] = { real : even.real - odd_real, imag : even.imag - odd_imag};
+					++b;
+					r += inv;
+				}
+				g += half << 1;
+			}
+			half <<= 1;
+			inv >>= 1;
+		}
+	}
+	,calcFreq: function(data) {
+		var a = [];
+		var freq = [];
+		a.length = this.n;
+		freq.length = this.n / 2 | 0;
+		var _g = 0;
+		var _g1 = a.length;
+		while(_g < _g1) {
+			var i = _g++;
+			a[this.reversed[i]] = { real : data[i] * this.hamming[i], imag : 0.0};
+		}
+		this.doFFT(a);
+		var _g = 0;
+		var _g1 = this.n / 2 | 0;
+		while(_g < _g1) {
+			var i = _g++;
+			var z = a[1 + i];
+			freq[i] = 2 * Math.sqrt(z.real * z.real + z.imag * z.imag) / this.n;
+		}
+		var z = a[this.n / 2 | 0];
+		freq[(this.n / 2 | 0) - 1] = Math.sqrt(z.real * z.real + z.imag * z.imag) / this.n;
+		return freq;
+	}
+	,__class__: grig_audio_FFT
+};
+var grig_audio_FFTVisualization = function() {
+	this.xscale = [];
+};
+$hxClasses["grig.audio.FFTVisualization"] = grig_audio_FFTVisualization;
+grig_audio_FFTVisualization.__name__ = "grig.audio.FFTVisualization";
+grig_audio_FFTVisualization.computeLogXScale = function(bands) {
+	var xscale = [];
+	xscale.length = bands + 1;
+	xscale[bands] = 0.0;
+	var _g = 0;
+	var _g1 = bands;
+	while(_g < _g1) {
+		var i = _g++;
+		xscale[i] = Math.pow(256,i / bands) - 0.5;
+	}
+	return xscale;
+};
+grig_audio_FFTVisualization.computeFreqBand = function(freq,xscale,band,bands) {
+	var a = Math.ceil(xscale[band]);
+	var b = Math.floor(xscale[band + 1]);
+	var n = 0.0;
+	if(b < a) {
+		n += freq[b] * (xscale[band + 1] - xscale[band]);
+	} else {
+		if(a > 0) {
+			n += freq[a - 1] * (a - xscale[band]);
+		}
+		while(a < b) {
+			n += freq[a];
+			++a;
+		}
+		if(b < 256) {
+			n += freq[b] * (xscale[band + 1] - b);
+		}
+	}
+	n *= bands / 12;
+	return 20 * grig_audio_FFT.log(10,n);
+};
+grig_audio_FFTVisualization.prototype = {
+	xscale: null
+	,makeLogGraph: function(freq,bands,dbRange,intRange) {
+		if(this.xscale.length != bands + 1) {
+			this.xscale = grig_audio_FFTVisualization.computeLogXScale(bands);
+		}
+		var graph = [];
+		graph.length = bands;
+		var _g = 0;
+		var _g1 = bands;
+		while(_g < _g1) {
+			var i = _g++;
+			var val = grig_audio_FFTVisualization.computeFreqBand(freq,this.xscale,i,bands);
+			val = (1 + val / dbRange) * intRange;
+			graph[i] = grig_audio_FFT.clamp_Int(val | 0,0,intRange);
+		}
+		return graph;
+	}
+	,__class__: grig_audio_FFTVisualization
+};
+var grig_audio_lime_UInt8ArrayTools = function() { };
+$hxClasses["grig.audio.lime.UInt8ArrayTools"] = grig_audio_lime_UInt8ArrayTools;
+grig_audio_lime_UInt8ArrayTools.__name__ = "grig.audio.lime.UInt8ArrayTools";
+grig_audio_lime_UInt8ArrayTools.getInt16 = function(data,pos) {
+	var val = data[pos] | data[pos + 1] << 8;
+	if((val & 32768) != 0) {
+		return val - 65536;
+	}
+	return val;
+};
+grig_audio_lime_UInt8ArrayTools.getInt24 = function(data,pos) {
+	var val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16;
+	if((val & 8388608) != 0) {
+		return val - 16777216;
+	}
+	return val;
+};
+grig_audio_lime_UInt8ArrayTools.getInt32 = function(data,pos) {
+	return data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24;
+};
+grig_audio_lime_UInt8ArrayTools.toInterleaved = function(data,bitsPerSample) {
+	var newBuffer = [];
+	if(bitsPerSample == 8) {
+		newBuffer.length = data.length;
+		var _g = 0;
+		var _g1 = data.length;
+		while(_g < _g1) {
+			var i = _g++;
+			newBuffer[i] = UInt.toFloat(data[i]) / 128.0;
+		}
+	} else if(bitsPerSample == 16) {
+		newBuffer.length = data.length / 2 | 0;
+		var bytes = new haxe_io_Bytes(new Uint8Array(data.buffer));
+		var _g = 0;
+		var _g1 = newBuffer.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var pos = i * 2;
+			var val = data[pos] | data[pos + 1] << 8;
+			newBuffer[i] = ((val & 32768) != 0 ? val - 65536 : val) / 32767.0;
+		}
+	} else if(bitsPerSample == 24) {
+		var bytes = new haxe_io_Bytes(new Uint8Array(data.buffer));
+		newBuffer.length = data.length / 3 | 0;
+		var _g = 0;
+		var _g1 = newBuffer.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var pos = i * 3;
+			var val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16;
+			newBuffer[i] = ((val & 8388608) != 0 ? val - 16777216 : val) / 8388607.0;
+		}
+	} else if(bitsPerSample == 32) {
+		newBuffer.length = data.length / 4 | 0;
+		var _g = 0;
+		var _g1 = newBuffer.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var pos = i * 4;
+			newBuffer[i] = (data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24) / 2147483647.0;
+		}
+	} else {
+		haxe_Log.trace("Unknown integer audio format",{ fileName : "grig/audio/lime/UInt8ArrayTools.hx", lineNumber : 55, className : "grig.audio.lime.UInt8ArrayTools", methodName : "toInterleaved"});
+	}
+	return newBuffer;
+};
 var haxe_StackItem = $hxEnums["haxe.StackItem"] = { __ename__:"haxe.StackItem",__constructs__:null
 	,CFunction: {_hx_name:"CFunction",_hx_index:0,__enum__:"haxe.StackItem",toString:$estr}
 	,Module: ($_=function(m) { return {_hx_index:1,m:m,__enum__:"haxe.StackItem",toString:$estr}; },$_._hx_name="Module",$_.__params__ = ["m"],$_)
@@ -98697,7 +100242,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 705373;
+	this.version = 606952;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";
@@ -165623,7 +167168,7 @@ states_PlayState.prototype = $extend(backend_MusicBeatState.prototype,{
 		states_PlayState.deathCounter = 0;
 		states_PlayState.seenCutscene = false;
 		var weekNoMiss = backend_WeekData.getWeekFileName() + "_nomiss";
-		this.checkForAchievement([weekNoMiss,"ur_bad","ur_good","hype","two_keys","toastie"]);
+		this.checkForAchievement([weekNoMiss,"ur_bad","ur_good","hype","two_keys","toastie","debugger"]);
 		var ret = this.callOnScripts("onEndSong",null,true);
 		if(ret != psychlua_LuaUtils.Function_Stop && !this.transitioning) {
 			var percent = this.ratingPercent;
@@ -166585,6 +168130,9 @@ states_PlayState.prototype = $extend(backend_MusicBeatState.prototype,{
 			var unlock = false;
 			if(name != backend_WeekData.getWeekFileName() + "_nomiss") {
 				switch(name) {
+				case "debugger":
+					unlock = this.songName == "test" && !usedPractice;
+					break;
 				case "hype":
 					unlock = !this.boyfriendIdled && !usedPractice;
 					break;
@@ -167417,7 +168965,12 @@ states_editors_CharacterEditorState.prototype = $extend(backend_MusicBeatState.p
 		flixel_FlxG.cameras.add(this.camHUD,false);
 		var lastLoaded = backend_Paths.currentLevel;
 		backend_Paths.currentLevel = this.assetFolder;
-		this.camEditor.bgColor = -10066330;
+		var bg = new objects_BGSprite("stageback",-600,-200,0.9,0.9);
+		this.add(bg);
+		var stageFront = new objects_BGSprite("stagefront",-650,600,0.9,0.9);
+		stageFront.setGraphicSize(stageFront.get_width() * 1.1 | 0);
+		stageFront.updateHitbox();
+		this.add(stageFront);
 		var this1 = this.dadPosition;
 		var x = 100;
 		var y = 100;
@@ -169262,7 +170815,12 @@ states_editors_CharacterEditorState.prototype = $extend(backend_MusicBeatState.p
 	,loadBG: function() {
 		var lastLoaded = backend_Paths.currentLevel;
 		backend_Paths.currentLevel = this.assetFolder;
-		this.camEditor.bgColor = -10066330;
+		var bg = new objects_BGSprite("stageback",-600,-200,0.9,0.9);
+		this.add(bg);
+		var stageFront = new objects_BGSprite("stagefront",-650,600,0.9,0.9);
+		stageFront.setGraphicSize(stageFront.get_width() * 1.1 | 0);
+		stageFront.updateHitbox();
+		this.add(stageFront);
 		var this1 = this.dadPosition;
 		var x = 100;
 		var y = 100;
@@ -188089,6 +189647,7 @@ var states_stages_objects_ABotSpeaker = function(x,y) {
 		x = 0;
 	}
 	this.lookingAtRight = true;
+	this.levelMax = 0;
 	this.volumes = [];
 	this.vizSprites = [];
 	this.VIZ_POS_Y = [0,-8,-3.5,-0.4,0.5,4.7,7];
@@ -188173,14 +189732,45 @@ states_stages_objects_ABotSpeaker.prototype = $extend(flixel_group_FlxTypedSprit
 	,eyeBg: null
 	,eyes: null
 	,speaker: null
+	,analyzer: null
 	,volumes: null
 	,snd: null
 	,set_snd: function(changed) {
 		this.snd = changed;
+		this.initAnalyzer();
 		return this.snd;
+	}
+	,levels: null
+	,levelMax: null
+	,update: function(elapsed) {
+		flixel_group_FlxTypedSpriteGroup.prototype.update.call(this,elapsed);
+		if(this.analyzer == null) {
+			return;
+		}
+		this.levels = this.analyzer.getLevels(this.levels);
+		var oldLevelMax = this.levelMax;
+		this.levelMax = 0;
+		var _g = 0;
+		var _g1 = Math.min(this.vizSprites.length,this.levels.length) | 0;
+		while(_g < _g1) {
+			var i = _g++;
+			var animFrame = Math.round(this.levels[i].value * 5);
+			var lowerBound = animFrame < 0 ? 0 : animFrame;
+			animFrame = Math.abs((lowerBound > 5 ? 5 : lowerBound) - 5) | 0;
+			this.vizSprites[i].animation._curAnim.set_curFrame(animFrame);
+			this.levelMax = Math.max(this.levelMax,5 - animFrame) | 0;
+		}
+		if(this.levelMax >= 4) {
+			if(oldLevelMax <= this.levelMax && (this.levelMax >= 5 || this.speaker.anim.get_curFrame() >= 3)) {
+				this.beatHit();
+			}
+		}
 	}
 	,beatHit: function() {
 		this.speaker.anim.play("anim",true);
+	}
+	,initAnalyzer: function() {
+		this.analyzer = new funkin_vis_dsp_SpectralAnalyzer(this.snd._channel.__audioSource,7,0.1,40);
 	}
 	,lookingAtRight: null
 	,lookLeft: function() {
@@ -192895,6 +194485,9 @@ openfl_geom_Matrix3D.__meta__ = { statics : { create2D : { SuppressWarnings : ["
 flxanimate_motion_AdjustColor.s_arrayOfDeltaIndex = [0,0.01,0.02,0.04,0.05,0.06,0.07,0.08,0.1,0.11,0.12,0.14,0.15,0.16,0.17,0.18,0.20,0.21,0.22,0.24,0.25,0.27,0.28,0.30,0.32,0.34,0.36,0.38,0.40,0.42,0.44,0.46,0.48,0.5,0.53,0.56,0.59,0.62,0.65,0.68,0.71,0.74,0.77,0.80,0.83,0.86,0.89,0.92,0.95,0.98,1.0,1.06,1.12,1.18,1.24,1.30,1.36,1.42,1.48,1.54,1.60,1.66,1.72,1.78,1.84,1.90,1.96,2.0,2.12,2.25,2.37,2.50,2.62,2.75,2.87,3.0,3.2,3.4,3.6,3.8,4.0,4.3,4.7,4.9,5.0,5.5,6.0,6.5,6.8,7.0,7.3,7.5,7.8,8.0,8.4,8.7,9.0,9.4,9.6,9.8,10.0];
 flxanimate_motion_DynamicMatrix.MATRIX_ORDER_PREPEND = 0;
 flxanimate_motion_DynamicMatrix.MATRIX_ORDER_APPEND = 1;
+funkin_vis_dsp_Complex.im = { real : 0, imag : 1};
+funkin_vis_dsp_Complex.zero = { real : 0, imag : 0};
+grig_audio_FFT.TWO_PI = 6.2831853;
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
