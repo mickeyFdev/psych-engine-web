@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TextureAtlas imagePath="ZRiverBump.png">
+<TextureAtlas imagePath="ZRiverBump.webp">
 	<!-- Created with Adobe Animate version 22.0.7.214 -->
 	<!-- http://www.adobe.com/products/animate.html -->
 	<SubTexture name="River Title Bump0000" x="438" y="667" width="436" height="653" frameX="0" frameY="-10" frameWidth="436" frameHeight="663"/>

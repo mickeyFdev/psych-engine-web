@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TextureAtlas imagePath="Nene.png" width="4079" height="3412">
+<TextureAtlas imagePath="Nene.webp" width="4079" height="3412">
   <SubTexture name="ComboCheer0001" x="0" y="0" width="433" height="294" rotated="true" frameX="-16" frameY="-57" frameWidth="312" frameHeight="496" />
   <SubTexture name="ComboCheer0002" x="433" y="0" width="447" height="294" rotated="true" frameX="-16" frameY="-43" frameWidth="312" frameHeight="496" />
   <SubTexture name="ComboCheer0003" x="880" y="0" width="453" height="312" rotated="true" frameX="-0" frameY="-43" frameWidth="312" frameHeight="496" />
