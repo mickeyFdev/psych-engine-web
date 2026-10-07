@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TextureAtlas imagePath="Pico_Death.webp" width="8053" height="2860">
+<TextureAtlas imagePath="Pico_Death.png" width="8053" height="2860">
   <SubTexture name="Pico Death Stab0001" x="5030" y="4" width="518" height="490" frameX="-125" frameY="-87" frameWidth="1061" frameHeight="615" />
   <SubTexture name="Pico Death Stab0002" x="2667" y="431" width="563" height="518" frameX="-125" frameY="-59" frameWidth="1061" frameHeight="615" />
   <SubTexture name="Pico Death Stab0003" x="534" y="428" width="548" height="499" frameX="-140" frameY="-78" frameWidth="1061" frameHeight="615" />

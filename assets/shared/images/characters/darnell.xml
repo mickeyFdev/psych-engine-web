@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TextureAtlas imagePath="darnell.webp" width="4788" height="4061">
+<TextureAtlas imagePath="darnell.png" width="4788" height="4061">
   <SubTexture name="Idle0001" x="432" y="921" width="374" height="471" frameX="-44" frameY="-79" frameWidth="643" frameHeight="665" />
   <SubTexture name="Idle0002" x="822" y="927" width="374" height="471" frameX="-44" frameY="-79" frameWidth="643" frameHeight="665" />
   <SubTexture name="Idle0003" x="1212" y="927" width="394" height="471" frameX="-45" frameY="-79" frameWidth="643" frameHeight="665" />

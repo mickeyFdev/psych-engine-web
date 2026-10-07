@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TextureAtlas imagePath="PessyBump.webp">
+<TextureAtlas imagePath="PessyBump.png">
 	<!-- Created with Adobe Animate version 23.0.2.103 -->
 	<!-- http://www.adobe.com/products/animate.html -->
 	<SubTexture name="Pessy Title Bump0000" x="1076" y="2" width="539" height="563" frameX="0" frameY="-6" frameWidth="539" frameHeight="569"/>
